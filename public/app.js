@@ -1,0 +1,613 @@
+/**
+ * CapInterest - Frontend Application Logic
+ * Manages UI state, Pinterest feed, web scraping interaction, modals, drag-and-drop, and tab navigation.
+ */
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Application State
+  const state = {
+    currentTab: 'feed',
+    searchQuery: '',
+    selectedCategory: 'all',
+    likedItems: JSON.parse(localStorage.getItem('capinterest_likes') || '[]'),
+    scrapedData: [],
+    selectedImageBase64: null,
+    defaultHats: [
+      {
+        id: 'def-1',
+        title: 'Cyberpunk Neon Bucket Hat',
+        image: 'assets/cyberpunk_bucket.png',
+        creator: 'cyber_trends',
+        category: 'techwear',
+        source: 'AI Generator',
+        url: '#',
+        tags: ['cyberpunk', 'neon', 'techwear', 'bucket-hat']
+      },
+      {
+        id: 'def-2',
+        title: 'Retro Corduroy Dad Hat',
+        image: 'assets/retro_corduroy.png',
+        creator: 'retro_vintage',
+        category: 'dadhat',
+        source: 'AI Generator',
+        url: '#',
+        tags: ['vintage', 'corduroy', 'dadhat', 'mustard']
+      },
+      {
+        id: 'def-3',
+        title: 'Sleek Techwear Visor Cap',
+        image: 'assets/techwear_visor.png',
+        creator: 'future_wear',
+        category: 'techwear',
+        source: 'AI Generator',
+        url: '#',
+        tags: ['techwear', 'visor', 'futuristic', 'minimalist']
+      },
+      {
+        id: 'def-4',
+        title: 'Futuristic Streetwear Cap',
+        image: 'assets/futuristic_streetwear.png',
+        creator: 'neo_street',
+        category: 'creative',
+        source: 'AI Generator',
+        url: '#',
+        tags: ['streetwear', 'futuristic', 'chrome', 'matte-black']
+      },
+      {
+        id: 'def-5',
+        title: 'Chunky Sage Knit Beanie',
+        image: 'assets/knit_beanie.png',
+        creator: 'cozy_styles',
+        category: 'beanie',
+        source: 'AI Generator',
+        url: '#',
+        tags: ['beanie', 'knit', 'wool', 'sage-green']
+      }
+    ]
+  };
+
+  // DOM Selection
+  const DOM = {
+    // Navigation & Tabs
+    feedNavBtn: document.getElementById('feed-nav-btn'),
+    ailabNavBtn: document.getElementById('ailab-nav-btn'),
+    feedSection: document.getElementById('feed-section'),
+    ailabSection: document.getElementById('ailab-section'),
+    logoBtn: document.getElementById('logo-btn'),
+    
+    // Search & Filters
+    searchInput: document.getElementById('search-input'),
+    searchClearBtn: document.getElementById('search-clear-btn'),
+    categoryBar: document.querySelector('.category-bar'),
+    scrapeStatus: document.getElementById('scrape-status'),
+    scrapeStatusText: document.getElementById('scrape-status-text'),
+    pinterestGrid: document.getElementById('pinterest-grid'),
+    emptyState: document.getElementById('empty-state'),
+    
+    // AI Lab Dropzone & Preview
+    dropzone: document.getElementById('dropzone'),
+    fileInput: document.getElementById('file-input'),
+    dropzonePrompt: document.getElementById('dropzone-prompt'),
+    scanViewport: document.getElementById('scan-viewport'),
+    scanPreview: document.getElementById('scan-preview'),
+    sampleList: document.getElementById('sample-list'),
+    startScanBtn: document.getElementById('start-scan-btn'),
+    resetScanBtn: document.getElementById('reset-scan-btn'),
+    resultPlaceholder: document.getElementById('result-placeholder'),
+    resultContent: document.getElementById('result-content'),
+    
+    // Detail Modal
+    detailModal: document.getElementById('detail-modal'),
+    closeDetailModal: document.getElementById('close-detail-modal'),
+    modalImg: document.getElementById('modal-img'),
+    modalCreator: document.getElementById('modal-creator'),
+    modalTitle: document.getElementById('modal-title'),
+    modalTags: document.getElementById('modal-tags'),
+    modalDesc: document.getElementById('modal-desc'),
+    modalAnalyzeBtn: document.getElementById('modal-analyze-btn'),
+    modalSourceBtn: document.getElementById('modal-source-btn'),
+    
+    // Settings Modal
+    settingsBtn: document.getElementById('settings-btn'),
+    settingsModal: document.getElementById('settings-modal'),
+    closeSettingsModal: document.getElementById('close-settings-modal'),
+    settingsMode: document.getElementById('settings-mode'),
+    apikeyGroup: document.getElementById('apikey-group'),
+    apikeyInput: document.getElementById('apikey-input'),
+    saveSettingsBtn: document.getElementById('save-settings-btn')
+  };
+
+  // Initialize
+  function init() {
+    registerEventListeners();
+    loadSettings();
+    renderSampleThumbnails();
+    
+    // Initial fetch for cap feed
+    fetchScrapedHats('trendy caps');
+  }
+
+  // 1. Navigation & Tabs
+  function switchTab(tabName) {
+    state.currentTab = tabName;
+    
+    if (tabName === 'feed') {
+      DOM.feedNavBtn.classList.add('active');
+      DOM.ailabNavBtn.classList.remove('active');
+      DOM.feedSection.classList.add('active');
+      DOM.ailabSection.classList.remove('active');
+    } else {
+      DOM.feedNavBtn.classList.remove('active');
+      DOM.ailabNavBtn.classList.add('active');
+      DOM.feedSection.classList.remove('active');
+      DOM.ailabSection.classList.add('active');
+      
+      // Auto-initialize analyzer elements
+      AIAnalyzer.init();
+    }
+  }
+
+  // 2. Settings Modal logic
+  function loadSettings() {
+    const configMode = localStorage.getItem('capinterest_mode') || 'demo';
+    const apiKey = localStorage.getItem('capinterest_apikey') || '';
+    
+    DOM.settingsMode.value = configMode;
+    DOM.apikeyInput.value = apiKey;
+    
+    if (configMode === 'gemini') {
+      DOM.apikeyGroup.style.display = 'flex';
+    } else {
+      DOM.apikeyGroup.style.display = 'none';
+    }
+  }
+
+  function saveSettings() {
+    const mode = DOM.settingsMode.value;
+    const key = DOM.apikeyInput.value.trim();
+    
+    localStorage.setItem('capinterest_mode', mode);
+    localStorage.setItem('capinterest_apikey', key);
+    
+    DOM.settingsModal.classList.remove('active');
+    
+    // Visual Notification
+    showNotification('Đã lưu cấu hình AI!');
+  }
+
+  function showNotification(message) {
+    const toast = document.createElement('div');
+    toast.className = 'status-indicator';
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '1000';
+    toast.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+    toast.style.margin = '0';
+    toast.innerHTML = `
+      <svg viewBox="0 0 24 24" width="18" height="18" style="color:var(--accent-cyan);"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/></svg>
+      <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.5s ease';
+      setTimeout(() => toast.remove(), 500);
+    }, 2500);
+  }
+
+  // 3. Web Scraping & Feed Rendering
+  async function fetchScrapedHats(query) {
+    DOM.scrapeStatus.style.display = 'flex';
+    DOM.scrapeStatusText.textContent = `Đang tìm kiếm nón thiết kế độc lạ: "${query}"...`;
+    DOM.pinterestGrid.innerHTML = '';
+    DOM.emptyState.style.display = 'none';
+
+    try {
+      const response = await fetch(`/api/scrape?query=${encodeURIComponent(query)}`);
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Cào ảnh thất bại');
+      }
+
+      state.scrapedData = result.data;
+      
+      // Blend default assets with scraped data to give beautiful results
+      let displayData = [];
+      
+      if (state.selectedCategory === 'all' && query === 'trendy caps') {
+        // Inject default high-res items at the top
+        displayData = [...state.defaultHats, ...state.scrapedData];
+      } else {
+        // Filter default items if category is selected
+        const filteredDefaults = state.defaultHats.filter(h => 
+          state.selectedCategory === 'all' || h.category === state.selectedCategory
+        );
+        displayData = [...filteredDefaults, ...state.scrapedData];
+      }
+
+      if (displayData.length === 0) {
+        DOM.emptyState.style.display = 'flex';
+      } else {
+        renderGrid(displayData);
+      }
+
+    } catch (error) {
+      console.error('Error fetching hats:', error);
+      // Fallback: Display only default images on error
+      const filteredDefaults = state.defaultHats.filter(h => 
+        state.selectedCategory === 'all' || h.category === state.selectedCategory
+      );
+      renderGrid(filteredDefaults);
+      showNotification('Không cào được ảnh mới. Đang hiển thị bộ sưu tập mặc định.');
+    } finally {
+      DOM.scrapeStatus.style.display = 'none';
+    }
+  }
+
+  function renderGrid(items) {
+    DOM.pinterestGrid.innerHTML = '';
+    
+    items.forEach((item, index) => {
+      const isLiked = state.likedItems.includes(item.id || item.image);
+      
+      const card = document.createElement('div');
+      card.className = 'cap-card';
+      // Vary aspect ratios a bit to look like Pinterest (using index logic)
+      const mockHeight = index % 3 === 0 ? '300px' : (index % 3 === 1 ? '220px' : '260px');
+      
+      card.innerHTML = `
+        <img src="${item.image}" alt="${item.title}" loading="lazy" style="min-height: ${mockHeight}">
+        <div class="cap-card-overlay">
+          <div class="overlay-top">
+            <button class="like-btn ${isLiked ? 'liked' : ''}" data-id="${item.id || item.image}">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
+          </div>
+          <div class="overlay-bottom">
+            <h4 class="overlay-title">${item.title}</h4>
+            <div class="overlay-meta">
+              <span>@${item.creator || 'streetwear'}</span>
+              <button class="card-btn" data-action="analyze">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
+                Quét AI
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Event listener for opening detail modal on card click (except when clicking buttons)
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.like-btn') || e.target.closest('.card-btn')) return;
+        openDetailModal(item);
+      });
+
+      // Like Button Event
+      const likeBtn = card.querySelector('.like-btn');
+      likeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleLike(item.id || item.image, likeBtn);
+      });
+
+      // Analyze Button Event
+      const analyzeBtn = card.querySelector('.card-btn');
+      analyzeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sendImageToAiLab(item.image);
+      });
+
+      DOM.pinterestGrid.appendChild(card);
+    });
+  }
+
+  function toggleLike(itemId, btnElement) {
+    const idx = state.likedItems.indexOf(itemId);
+    if (idx > -1) {
+      state.likedItems.splice(idx, 1);
+      btnElement.classList.remove('liked');
+      showNotification('Đã bỏ lưu nón.');
+    } else {
+      state.likedItems.push(itemId);
+      btnElement.classList.add('liked');
+      showNotification('Đã lưu vào bộ sưu tập nón yêu thích!');
+    }
+    localStorage.setItem('capinterest_likes', JSON.stringify(state.likedItems));
+  }
+
+  // 4. Detail Modal Handling
+  function openDetailModal(item) {
+    DOM.modalImg.src = item.image;
+    DOM.modalTitle.textContent = item.title;
+    DOM.modalCreator.textContent = `@${item.creator || 'fashion_source'}`;
+    DOM.modalSourceBtn.href = item.url && item.url !== '#' ? item.url : item.image;
+    
+    // Clear & Render Tags
+    DOM.modalTags.innerHTML = '';
+    const tags = item.tags || ['nón-mũ', 'headwear', 'trendy', 'thiết-kế'];
+    tags.forEach(tag => {
+      const span = document.createElement('span');
+      span.className = 'tag';
+      span.textContent = `#${tag}`;
+      DOM.modalTags.appendChild(span);
+    });
+
+    DOM.modalDesc.textContent = item.title + ' - Kiểu nón thời trang hiện đại được nhiều nhà thiết kế săn đón.';
+
+    // Setup action button inside modal
+    DOM.modalAnalyzeBtn.onclick = () => {
+      DOM.detailModal.classList.remove('active');
+      sendImageToAiLab(item.image);
+    };
+
+    DOM.detailModal.classList.add('active');
+  }
+
+  // Helper to convert Image URL to Base64
+  async function imageUrlToBase64(url) {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn("Failed to fetch image directly for base64 conversion. Reverting to original source URL.", e);
+      return url; // fallback to sending the original URL if fetch fails (CORS issues on external URLs)
+    }
+  }
+
+  // Send an image directly to AI Lab & trigger scan
+  async function sendImageToAiLab(imageSrc) {
+    switchTab('ailab');
+    
+    // Reset results layout
+    DOM.resultPlaceholder.style.display = 'flex';
+    DOM.resultContent.style.display = 'none';
+    
+    // Load image into scan viewport
+    DOM.dropzonePrompt.style.display = 'none';
+    DOM.scanViewport.style.display = 'flex';
+    DOM.scanPreview.src = imageSrc;
+    DOM.startScanBtn.disabled = false;
+    DOM.startScanBtn.classList.add('active');
+    DOM.resetScanBtn.style.display = 'block';
+
+    // Clear active sample thumbnail selections
+    document.querySelectorAll('.sample-thumb').forEach(thumb => thumb.classList.remove('active'));
+
+    // Handle URL vs Base64 conversion
+    if (imageSrc.startsWith('data:image')) {
+      state.selectedImageBase64 = imageSrc;
+    } else {
+      // Show loading scanner text immediately
+      state.selectedImageBase64 = null;
+      // Convert to base64 in background
+      state.selectedImageBase64 = await imageUrlToBase64(imageSrc);
+    }
+  }
+
+  // 5. AI Lab Logic (Upload & Samples)
+  function renderSampleThumbnails() {
+    DOM.sampleList.innerHTML = '';
+    state.defaultHats.forEach(hat => {
+      const thumb = document.createElement('div');
+      thumb.className = 'sample-thumb';
+      thumb.innerHTML = `<img src="${hat.image}" alt="${hat.title}">`;
+      
+      thumb.addEventListener('click', async () => {
+        // Highlight active sample
+        document.querySelectorAll('.sample-thumb').forEach(t => t.classList.remove('active'));
+        thumb.classList.add('active');
+
+        // Load preview
+        DOM.dropzonePrompt.style.display = 'none';
+        DOM.scanViewport.style.display = 'flex';
+        DOM.scanPreview.src = hat.image;
+        DOM.startScanBtn.disabled = false;
+        DOM.startScanBtn.classList.add('active');
+        DOM.resetScanBtn.style.display = 'block';
+
+        // Convert sample image URL to base64
+        state.selectedImageBase64 = await imageUrlToBase64(hat.image);
+        
+        // Reset results panel
+        DOM.resultPlaceholder.style.display = 'flex';
+        DOM.resultContent.style.display = 'none';
+      });
+      DOM.sampleList.appendChild(thumb);
+    });
+  }
+
+  // Setup Event Listeners
+  function registerEventListeners() {
+    // Navigation Tabs
+    DOM.feedNavBtn.addEventListener('click', () => switchTab('feed'));
+    DOM.ailabNavBtn.addEventListener('click', () => switchTab('ailab'));
+    DOM.logoBtn.addEventListener('click', () => {
+      switchTab('feed');
+      DOM.searchInput.value = '';
+      DOM.searchClearBtn.style.display = 'none';
+      state.selectedCategory = 'all';
+      document.querySelectorAll('.cat-pill').forEach(pill => pill.classList.remove('active'));
+      document.querySelector('[data-category="all"]').classList.add('active');
+      fetchScrapedHats('trendy caps');
+    });
+
+    // Search bar submit
+    DOM.searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const query = DOM.searchInput.value.trim();
+        if (query) {
+          state.searchQuery = query;
+          DOM.searchClearBtn.style.display = 'block';
+          fetchScrapedHats(query);
+        }
+      }
+    });
+
+    // Search clear button
+    DOM.searchClearBtn.addEventListener('click', () => {
+      DOM.searchInput.value = '';
+      DOM.searchClearBtn.style.display = 'none';
+      state.searchQuery = '';
+      fetchScrapedHats(state.selectedCategory === 'all' ? 'trendy caps' : state.selectedCategory + ' headwear');
+    });
+
+    // Category Quick Filters
+    DOM.categoryBar.addEventListener('click', (e) => {
+      const pill = e.target.closest('.cat-pill');
+      if (!pill) return;
+
+      document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      
+      const category = pill.dataset.category;
+      state.selectedCategory = category;
+
+      let query = 'trendy caps';
+      if (category !== 'all') {
+        query = `${category} headwear`;
+      }
+      
+      if (state.searchQuery) {
+        query = `${state.searchQuery} ${category !== 'all' ? category : ''}`;
+      }
+
+      fetchScrapedHats(query);
+    });
+
+    // Settings Modal toggles
+    DOM.settingsBtn.addEventListener('click', () => {
+      loadSettings();
+      DOM.settingsModal.classList.add('active');
+    });
+    DOM.closeSettingsModal.addEventListener('click', () => {
+      DOM.settingsModal.classList.remove('active');
+    });
+    DOM.settingsMode.addEventListener('change', () => {
+      if (DOM.settingsMode.value === 'gemini') {
+        DOM.apikeyGroup.style.display = 'flex';
+      } else {
+        DOM.apikeyGroup.style.display = 'none';
+      }
+    });
+    DOM.saveSettingsBtn.addEventListener('click', saveSettings);
+
+    // Detail Modal Close
+    DOM.closeDetailModal.addEventListener('click', () => {
+      DOM.detailModal.classList.remove('active');
+    });
+    
+    // Close modals on clicking overlay background
+    window.addEventListener('click', (e) => {
+      if (e.target === DOM.detailModal) DOM.detailModal.classList.remove('active');
+      if (e.target === DOM.settingsModal) DOM.settingsModal.classList.remove('active');
+    });
+
+    // File input trigger
+    DOM.dropzone.addEventListener('click', (e) => {
+      if (e.target.closest('#scan-viewport') || e.target.closest('#reset-scan-btn')) return;
+      DOM.fileInput.click();
+    });
+
+    // Handle Upload File selection
+    DOM.fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        handleUploadedFile(file);
+      }
+    });
+
+    // Drag and Drop
+    DOM.dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      DOM.dropzone.classList.add('dragover');
+    });
+    DOM.dropzone.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      DOM.dropzone.classList.add('dragover');
+    });
+    DOM.dropzone.addEventListener('dragleave', () => {
+      DOM.dropzone.classList.remove('dragover');
+    });
+    DOM.dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      DOM.dropzone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        handleUploadedFile(file);
+      }
+    });
+
+    // Reset Scan Viewport
+    DOM.resetScanBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetScanViewport();
+    });
+
+    // Start Scan triggers AI Analyzer
+    DOM.startScanBtn.addEventListener('click', () => {
+      if (state.selectedImageBase64) {
+        AIAnalyzer.analyze(state.selectedImageBase64);
+      } else {
+        // Fallback: analyze using current src directly (if URL conversion failed/not needed)
+        AIAnalyzer.analyze(DOM.scanPreview.src);
+      }
+    });
+  }
+
+  function handleUploadedFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64Src = e.target.result;
+      state.selectedImageBase64 = base64Src;
+
+      // Load Preview
+      DOM.dropzonePrompt.style.display = 'none';
+      DOM.scanViewport.style.display = 'flex';
+      DOM.scanPreview.src = base64Src;
+      DOM.startScanBtn.disabled = false;
+      DOM.startScanBtn.classList.add('active');
+      DOM.resetScanBtn.style.display = 'block';
+
+      // Clear sample selections
+      document.querySelectorAll('.sample-thumb').forEach(thumb => thumb.classList.remove('active'));
+      
+      // Reset results panel
+      DOM.resultPlaceholder.style.display = 'flex';
+      DOM.resultContent.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function resetScanViewport() {
+    DOM.fileInput.value = '';
+    state.selectedImageBase64 = null;
+    DOM.scanViewport.style.display = 'none';
+    DOM.dropzonePrompt.style.display = 'flex';
+    DOM.startScanBtn.disabled = true;
+    DOM.startScanBtn.classList.remove('active');
+    DOM.resetScanBtn.style.display = 'none';
+    DOM.scanPreview.src = '';
+    
+    // Clear sample highlights
+    document.querySelectorAll('.sample-thumb').forEach(thumb => thumb.classList.remove('active'));
+
+    // Reset results panel
+    DOM.resultPlaceholder.innerHTML = `
+      <svg viewBox="0 0 24 24" width="64" height="64"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/></svg>
+      <p>Chưa có dữ liệu phân tích. Hãy tải ảnh lên và nhấn "Quét & Phân Tích Bằng AI" ở cột bên trái.</p>
+    `;
+    DOM.resultPlaceholder.style.display = 'flex';
+    DOM.resultContent.style.display = 'none';
+  }
+
+  // Start app
+  init();
+});
