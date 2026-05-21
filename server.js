@@ -836,11 +836,11 @@ app.post('/api/analyze', async (req, res) => {
     return res.json({ success: true, source: 'gemini', data: analysisResult });
 
   } catch (error) {
-    console.error('Gemini API call failed:', error.response?.data || error.message);
-    return res.status(500).json({ 
-      success: false, 
-      error: 'Gemini API call failed. Falling back to Demo Mode.',
-      fallbackData: getMockAnalysis()
+    console.error('Gemini API call failed, falling back to Demo Mode:', error.response?.data || error.message);
+    return res.json({ 
+      success: true, 
+      source: 'demo-fallback', 
+      data: getMockAnalysis()
     });
   }
 });
@@ -1114,11 +1114,11 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
     res.json({ success: true, reply: contentText });
 
   } catch (error) {
-    console.error('[Design Agent] Gemini API call failed:', error.response?.data || error.message);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Gemini API call failed. Falling back to Demo Mode.',
-      reply: getMockDesignReply(prompt)
+    console.error('[Design Agent] Gemini API call failed, falling back to Demo Mode:', error.response?.data || error.message);
+    res.json({ 
+      success: true, 
+      source: 'demo-fallback',
+      reply: getMockDesignReply(prompt) + '\n\n*(Lưu ý: Đã tự động chuyển sang chế độ Demo do kết nối Gemini API thất bại)*'
     });
   }
 });

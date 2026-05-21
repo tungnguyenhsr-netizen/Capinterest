@@ -505,10 +505,26 @@ document.addEventListener('DOMContentLoaded', () => {
       DOM.loginTriggerBtn.style.display = 'none';
       DOM.userProfileBtn.style.display = 'flex';
       DOM.userUsername.textContent = `@${state.auth.username}`;
+      if (DOM.agentChatInput) {
+        DOM.agentChatInput.disabled = false;
+        DOM.agentChatInput.placeholder = "Mô tả ý tưởng thiết kế nón của bạn ở đây... (Ấn Enter để gửi, Shift+Enter xuống dòng)";
+      }
+      if (DOM.agentSendBtn) {
+        DOM.agentSendBtn.disabled = false;
+        DOM.agentSendBtn.classList.add('active');
+      }
     } else {
       DOM.loginTriggerBtn.style.display = 'flex';
       DOM.userProfileBtn.style.display = 'none';
       DOM.userUsername.textContent = '';
+      if (DOM.agentChatInput) {
+        DOM.agentChatInput.disabled = true;
+        DOM.agentChatInput.placeholder = "Vui lòng đăng nhập để trò chuyện với AI Design Agent...";
+      }
+      if (DOM.agentSendBtn) {
+        DOM.agentSendBtn.disabled = true;
+        DOM.agentSendBtn.classList.remove('active');
+      }
     }
   }
 
@@ -688,14 +704,17 @@ document.addEventListener('DOMContentLoaded', () => {
     DOM.feedNavBtn.classList.remove('active');
     DOM.collectionNavBtn.classList.remove('active');
     DOM.ailabNavBtn.classList.remove('active');
+    if (DOM.changelogBtn) DOM.changelogBtn.classList.remove('active');
     
     if (DOM.mobileFeedNavBtn) DOM.mobileFeedNavBtn.classList.remove('active');
     if (DOM.mobileCollectionNavBtn) DOM.mobileCollectionNavBtn.classList.remove('active');
     if (DOM.mobileAilabNavBtn) DOM.mobileAilabNavBtn.classList.remove('active');
+    if (DOM.mobileChangelogNavBtn) DOM.mobileChangelogNavBtn.classList.remove('active');
 
     DOM.feedSection.classList.remove('active');
     DOM.collectionSection.classList.remove('active');
     DOM.ailabSection.classList.remove('active');
+    if (DOM.changelogSection) DOM.changelogSection.classList.remove('active');
     
     // Show category bar only on feed tab
     DOM.categoryBar.style.display = (tabName === 'feed') ? '' : 'none';
@@ -727,6 +746,11 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Auto-initialize analyzer elements
       AIAnalyzer.init();
+    } else if (tabName === 'changelog') {
+      if (DOM.changelogBtn) DOM.changelogBtn.classList.add('active');
+      if (DOM.mobileChangelogNavBtn) DOM.mobileChangelogNavBtn.classList.add('active');
+      if (DOM.changelogSection) DOM.changelogSection.classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
