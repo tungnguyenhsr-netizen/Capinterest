@@ -11,3 +11,5 @@ print_*.js
 search_*.js
 test_*.js
 *.html
+data/
+

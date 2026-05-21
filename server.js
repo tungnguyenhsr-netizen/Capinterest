@@ -2,7 +2,12 @@ import 'dotenv/config';
 import express from 'express';
 import axios from 'axios';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,6 +15,36 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const SERPER_API_KEY = process.env.SERPER_API_KEY || '';
 const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'capinterest-dev-secret-change-in-production';
+
+// ─── JSON File Database ───────────────────────────────────────────────────────
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+function readDB(name) {
+  const file = path.join(DATA_DIR, `${name}.json`);
+  if (!fs.existsSync(file)) return [];
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return []; }
+}
+
+function writeDB(name, data) {
+  const file = path.join(DATA_DIR, `${name}.json`);
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+// ─── Auth Middleware ──────────────────────────────────────────────────────────
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: 'Chưa đăng nhập' });
+  }
+  try {
+    req.user = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ success: false, error: 'Phiên đăng nhập hết hạn, vui lòng đăng nhập lại' });
+  }
+}
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -476,6 +511,110 @@ function simulateAiAnalysis(res) {
     });
   }, 2000); // Simulate scan delay
 }
+
+// ─── Auth Routes ──────────────────────────────────────────────────────────────
+
+// POST /api/auth/register
+app.post('/api/auth/register', async (req, res) => {
+  const { username, password } = req.body || {};
+  if (!username || !password)
+    return res.status(400).json({ success: false, error: 'Vui lòng điền đầy đủ thông tin' });
+  if (username.length < 3)
+    return res.status(400).json({ success: false, error: 'Tên đăng nhập phải có ít nhất 3 ký tự' });
+  if (password.length < 6)
+    return res.status(400).json({ success: false, error: 'Mật khẩu phải có ít nhất 6 ký tự' });
+
+  const users = readDB('users');
+  if (users.find(u => u.username.toLowerCase() === username.toLowerCase()))
+    return res.status(409).json({ success: false, error: 'Tên đăng nhập đã tồn tại' });
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const user = { id: Date.now().toString(), username, passwordHash, createdAt: new Date().toISOString() };
+  users.push(user);
+  writeDB('users', users);
+
+  const token = jwt.sign({ userId: user.id, username }, JWT_SECRET, { expiresIn: '30d' });
+  console.log(`[Auth] New user registered: ${username}`);
+  res.json({ success: true, token, username });
+});
+
+// POST /api/auth/login
+app.post('/api/auth/login', async (req, res) => {
+  const { username, password } = req.body || {};
+  if (!username || !password)
+    return res.status(400).json({ success: false, error: 'Vui lòng điền đầy đủ thông tin' });
+
+  const users = readDB('users');
+  const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+  if (!user || !(await bcrypt.compare(password, user.passwordHash)))
+    return res.status(401).json({ success: false, error: 'Tên đăng nhập hoặc mật khẩu không đúng' });
+
+  const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '30d' });
+  console.log(`[Auth] User logged in: ${user.username}`);
+  res.json({ success: true, token, username: user.username });
+});
+
+// ─── Collection Routes ────────────────────────────────────────────────────────
+
+// GET /api/collection — lấy collection của user hiện tại
+app.get('/api/collection', authMiddleware, (req, res) => {
+  const all = readDB('collections');
+  const userItems = all.filter(c => c.userId === req.user.userId)
+    .sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt))
+    .map(c => c.item);
+  res.json({ success: true, data: userItems });
+});
+
+// POST /api/collection/add — thêm 1 item
+app.post('/api/collection/add', authMiddleware, (req, res) => {
+  const { item } = req.body || {};
+  if (!item || !(item.id || item.image))
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin item' });
+
+  const itemId = item.id || item.image;
+  const all = readDB('collections');
+  const exists = all.find(c => c.userId === req.user.userId && c.itemId === itemId);
+  if (!exists) {
+    all.push({ userId: req.user.userId, itemId, item, savedAt: new Date().toISOString() });
+    writeDB('collections', all);
+  }
+  res.json({ success: true });
+});
+
+// DELETE /api/collection/remove — xoá 1 item
+app.delete('/api/collection/remove', authMiddleware, (req, res) => {
+  const { itemId } = req.body || {};
+  if (!itemId) return res.status(400).json({ success: false, error: 'Thiếu itemId' });
+
+  let all = readDB('collections');
+  all = all.filter(c => !(c.userId === req.user.userId && c.itemId === itemId));
+  writeDB('collections', all);
+  res.json({ success: true });
+});
+
+// POST /api/collection/migrate — migrate hàng loạt từ localStorage
+app.post('/api/collection/migrate', authMiddleware, (req, res) => {
+  const { items } = req.body || {};
+  if (!Array.isArray(items) || items.length === 0)
+    return res.status(400).json({ success: false, error: 'Không có item nào để migrate' });
+
+  let all = readDB('collections');
+  let addedCount = 0;
+
+  for (const item of items) {
+    const itemId = item.id || item.image;
+    if (!itemId) continue;
+    const exists = all.find(c => c.userId === req.user.userId && c.itemId === itemId);
+    if (!exists) {
+      all.push({ userId: req.user.userId, itemId, item, savedAt: new Date().toISOString() });
+      addedCount++;
+    }
+  }
+
+  writeDB('collections', all);
+  console.log(`[Migrate] User ${req.user.username} migrated ${addedCount} items`);
+  res.json({ success: true, added: addedCount });
+});
 
 // ─── Health check endpoint (dùng cho UptimeRobot để giữ server thức) ─────────
 app.get('/health', (req, res) => {

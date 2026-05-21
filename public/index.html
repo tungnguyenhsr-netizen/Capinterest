@@ -58,6 +58,20 @@
           <svg viewBox="0 0 24 24" width="18" height="18"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>
           Dán link nón
         </button>
+        <!-- User Profile Badge -->
+        <div class="user-profile-btn" id="user-profile-btn" style="display: none;">
+          <span class="user-avatar">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/></svg>
+          </span>
+          <span id="user-username">Username</span>
+          <button class="logout-icon-btn" id="logout-btn" title="Đăng xuất">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor"/></svg>
+          </button>
+        </div>
+        <button class="nav-btn" id="login-trigger-btn">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="currentColor"/></svg>
+          Đăng nhập
+        </button>
         <button class="icon-btn" id="settings-btn" title="Cấu hình API Key">
           <svg viewBox="0 0 24 24" width="20" height="20"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/></svg>
         </button>
@@ -360,6 +374,66 @@
       <div class="settings-actions">
         <button class="cta-btn active" id="save-add-btn">Thêm vào Bản tin</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-card auth-card">
+      <button class="close-modal" id="close-auth-modal">&times;</button>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login-btn">Đăng nhập</button>
+        <button class="auth-tab" id="tab-register-btn">Đăng ký</button>
+      </div>
+      
+      <!-- Login Form -->
+      <form id="login-form" class="auth-form active">
+        <div class="form-group">
+          <label for="login-username">Tên đăng nhập</label>
+          <input type="text" id="login-username" placeholder="Nhập tên đăng nhập..." required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="login-password">Mật khẩu</label>
+          <input type="password" id="login-password" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
+        </div>
+        <span class="auth-error" id="login-error" style="display:none;">Lỗi</span>
+        <button type="submit" class="cta-btn active" id="login-submit-btn" style="width: 100%; margin-top: 15px;">Đăng nhập</button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="register-form" class="auth-form">
+        <div class="form-group">
+          <label for="register-username">Tên đăng nhập</label>
+          <input type="text" id="register-username" placeholder="Tên đăng nhập (ít nhất 3 ký tự)..." required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="register-password">Mật khẩu</label>
+          <input type="password" id="register-password" placeholder="Mật khẩu (ít nhất 6 ký tự)..." required autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label for="register-confirm-password">Xác nhận mật khẩu</label>
+          <input type="password" id="register-confirm-password" placeholder="Nhập lại mật khẩu..." required autocomplete="new-password">
+        </div>
+        <span class="auth-error" id="register-error" style="display:none;">Lỗi</span>
+        <button type="submit" class="cta-btn active" id="register-submit-btn" style="width: 100%; margin-top: 15px;">Đăng ký tài khoản</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Migration Banner -->
+  <div class="migration-banner" id="migration-banner" style="display:none;">
+    <div class="migration-content">
+      <svg class="migration-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+      </svg>
+      <div class="migration-text">
+        <h4>Đồng bộ dữ liệu</h4>
+        <p>Phát hiện <strong id="migration-count">0</strong> mẫu nón yêu thích được lưu cục bộ. Đồng bộ lên tài khoản này ngay?</p>
+      </div>
+    </div>
+    <div class="migration-actions">
+      <button class="cta-btn active" id="migration-confirm-btn">Đồng bộ ngay</button>
+      <button class="outline-btn" id="migration-cancel-btn">Để sau</button>
     </div>
   </div>
 

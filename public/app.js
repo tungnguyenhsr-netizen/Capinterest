@@ -9,8 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
     currentTab: 'feed',
     searchQuery: '',
     selectedCategory: 'all',
-    likedItems: JSON.parse(localStorage.getItem('capinterest_likes') || '[]'),
-    likedItemsObjects: JSON.parse(localStorage.getItem('capinterest_likes_objects') || '[]'),
+    auth: {
+      token: localStorage.getItem('capinterest_token') || null,
+      username: localStorage.getItem('capinterest_username') || null
+    },
+    likedItems: [],
+    likedItemsObjects: [],
     manualHats: JSON.parse(localStorage.getItem('capinterest_manual_hats') || '[]'),
     scrapedData: [],
     loadedImageUrls: new Set(),
@@ -144,11 +148,106 @@ document.addEventListener('DOMContentLoaded', () => {
     collectionGrid: document.getElementById('collection-grid'),
     collectionCount: document.getElementById('collection-count'),
     collectionEmpty: document.getElementById('collection-empty'),
-    clearCollectionBtn: document.getElementById('clear-collection-btn')
+    clearCollectionBtn: document.getElementById('clear-collection-btn'),
+
+    // Auth Modal & Badge
+    authModal: document.getElementById('auth-modal'),
+    closeAuthModal: document.getElementById('close-auth-modal'),
+    loginTriggerBtn: document.getElementById('login-trigger-btn'),
+    userProfileBtn: document.getElementById('user-profile-btn'),
+    userUsername: document.getElementById('user-username'),
+    logoutBtn: document.getElementById('logout-btn'),
+    tabLoginBtn: document.getElementById('tab-login-btn'),
+    tabRegisterBtn: document.getElementById('tab-register-btn'),
+    loginForm: document.getElementById('login-form'),
+    registerForm: document.getElementById('register-form'),
+    loginError: document.getElementById('login-error'),
+    registerError: document.getElementById('register-error'),
+
+    // Migration Banner
+    migrationBanner: document.getElementById('migration-banner'),
+    migrationCount: document.getElementById('migration-count'),
+    migrationConfirmBtn: document.getElementById('migration-confirm-btn'),
+    migrationCancelBtn: document.getElementById('migration-cancel-btn')
   };
 
+  // API Request Helper
+  async function apiCall(endpoint, method = 'GET', body = null) {
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (state.auth.token) {
+      headers['Authorization'] = `Bearer ${state.auth.token}`;
+    }
+    const options = { method, headers };
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+    const res = await fetch(endpoint, options);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || `HTTP error! status: ${res.status}`);
+    }
+    return data;
+  }
+
+  // Update Auth Badge in Header
+  function updateAuthUI() {
+    if (state.auth.token) {
+      DOM.loginTriggerBtn.style.display = 'none';
+      DOM.userProfileBtn.style.display = 'flex';
+      DOM.userUsername.textContent = `@${state.auth.username}`;
+    } else {
+      DOM.loginTriggerBtn.style.display = 'flex';
+      DOM.userProfileBtn.style.display = 'none';
+      DOM.userUsername.textContent = '';
+    }
+  }
+
+  // Sync collection (server vs local guest)
+  async function syncCollection() {
+    if (state.auth.token) {
+      try {
+        const res = await apiCall('/api/collection');
+        if (res.success) {
+          state.likedItemsObjects = res.data || [];
+          state.likedItems = (res.data || []).map(item => item.id || item.image);
+          updateCollectionBadge();
+          if (state.currentTab === 'collection') {
+            renderCollection();
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync collection with server:', err);
+      }
+    } else {
+      // Guest local storage
+      state.likedItems = JSON.parse(localStorage.getItem('capinterest_likes') || '[]');
+      state.likedItemsObjects = JSON.parse(localStorage.getItem('capinterest_likes_objects') || '[]');
+      updateCollectionBadge();
+      if (state.currentTab === 'collection') {
+        renderCollection();
+      }
+    }
+  }
+
+  // Check if there is guest data to migrate
+  function checkMigrationAfterLogin() {
+    if (!state.auth.token) {
+      DOM.migrationBanner.style.display = 'none';
+      return;
+    }
+    const localLikes = JSON.parse(localStorage.getItem('capinterest_likes_objects') || '[]');
+    if (localLikes.length > 0) {
+      DOM.migrationCount.textContent = localLikes.length;
+      DOM.migrationBanner.style.display = 'flex';
+    } else {
+      DOM.migrationBanner.style.display = 'none';
+    }
+  }
+
   // Initialize
-  function init() {
+  async function init() {
     registerEventListeners();
     loadSettings();
     renderSampleThumbnails();
@@ -157,8 +256,14 @@ document.addEventListener('DOMContentLoaded', () => {
     state.defaultHats.forEach(h => state.loadedImageUrls.add(h.image));
     state.manualHats.forEach(h => state.loadedImageUrls.add(h.image));
     
-    // Show collection badge count on load
-    updateCollectionBadge();
+    // Set initial Auth UI state
+    updateAuthUI();
+    
+    // Load and sync collection
+    await syncCollection();
+    
+    // Check migration
+    checkMigrationAfterLogin();
     
     // Initial fetch for cap feed
     fetchScrapedHats('trendy caps');
@@ -476,28 +581,58 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function toggleLike(item, btnElement) {
+  async function toggleLike(item, btnElement) {
     const itemId = item.id || item.image;
     const idx = state.likedItems.indexOf(itemId);
     
-    if (idx > -1) {
-      // Unlike
-      state.likedItems.splice(idx, 1);
-      btnElement.classList.remove('liked');
-      state.likedItemsObjects = state.likedItemsObjects.filter(o => (o.id || o.image) !== itemId);
-      showNotification('Đã bỏ lưu nón.');
+    if (state.auth.token) {
+      if (idx > -1) {
+        try {
+          btnElement.disabled = true;
+          await apiCall('/api/collection/remove', 'DELETE', { itemId });
+          state.likedItems.splice(idx, 1);
+          btnElement.classList.remove('liked');
+          state.likedItemsObjects = state.likedItemsObjects.filter(o => (o.id || o.image) !== itemId);
+          showNotification('Đã bỏ lưu nón.');
+        } catch (err) {
+          console.error(err);
+          showNotification('Lỗi khi bỏ lưu nón.');
+        } finally {
+          btnElement.disabled = false;
+        }
+      } else {
+        try {
+          btnElement.disabled = true;
+          await apiCall('/api/collection/add', 'POST', { item });
+          state.likedItems.push(itemId);
+          btnElement.classList.add('liked');
+          state.likedItemsObjects.push(item);
+          showNotification('Đã lưu vào bộ sưu tập nón yêu thích!');
+        } catch (err) {
+          console.error(err);
+          showNotification('Lỗi khi lưu nón.');
+        } finally {
+          btnElement.disabled = false;
+        }
+      }
     } else {
-      // Like
-      state.likedItems.push(itemId);
-      btnElement.classList.add('liked');
-      state.likedItemsObjects.push(item);
-      showNotification('Đã lưu vào bộ sưu tập nón yêu thích!');
+      if (idx > -1) {
+        state.likedItems.splice(idx, 1);
+        btnElement.classList.remove('liked');
+        state.likedItemsObjects = state.likedItemsObjects.filter(o => (o.id || o.image) !== itemId);
+        showNotification('Đã bỏ lưu nón.');
+      } else {
+        state.likedItems.push(itemId);
+        btnElement.classList.add('liked');
+        state.likedItemsObjects.push(item);
+        showNotification('Đã lưu vào bộ sưu tập nón yêu thích!');
+      }
+      localStorage.setItem('capinterest_likes', JSON.stringify(state.likedItems));
+      localStorage.setItem('capinterest_likes_objects', JSON.stringify(state.likedItemsObjects));
     }
-    localStorage.setItem('capinterest_likes', JSON.stringify(state.likedItems));
-    localStorage.setItem('capinterest_likes_objects', JSON.stringify(state.likedItemsObjects));
+    
     updateCollectionBadge();
     
-    // If collection tab is currently shown, re-render it live
     if (state.currentTab === 'collection') {
       renderCollection();
     }
@@ -791,17 +926,217 @@ document.addEventListener('DOMContentLoaded', () => {
     DOM.ailabNavBtn.addEventListener('click', () => switchTab('ailab'));
 
     // Clear all collection
-    DOM.clearCollectionBtn.addEventListener('click', () => {
+    DOM.clearCollectionBtn.addEventListener('click', async () => {
       if (confirm('Bạn có chắc muốn xóa toàn bộ bộ sưu tập?')) {
-        state.likedItems = [];
-        state.likedItemsObjects = [];
-        localStorage.setItem('capinterest_likes', '[]');
-        localStorage.setItem('capinterest_likes_objects', '[]');
-        updateCollectionBadge();
-        renderCollection();
-        showNotification('Đã xóa toàn bộ bộ sưu tập.');
+        if (state.auth.token) {
+          try {
+            // Delete all items one by one on the server
+            const promises = state.likedItems.map(itemId => 
+              apiCall('/api/collection/remove', 'DELETE', { itemId }).catch(() => {})
+            );
+            await Promise.all(promises);
+            await syncCollection();
+            showNotification('Đã xóa toàn bộ bộ sưu tập.');
+          } catch (err) {
+            showNotification('Không thể xóa bộ sưu tập trên server.');
+          }
+        } else {
+          state.likedItems = [];
+          state.likedItemsObjects = [];
+          localStorage.setItem('capinterest_likes', '[]');
+          localStorage.setItem('capinterest_likes_objects', '[]');
+          updateCollectionBadge();
+          renderCollection();
+          showNotification('Đã xóa toàn bộ bộ sưu tập.');
+        }
       }
     });
+
+    // ─── Authentication Event Listeners ──────────────────────────────────────
+    
+    // Open Auth Modal
+    if (DOM.loginTriggerBtn) {
+      DOM.loginTriggerBtn.addEventListener('click', () => {
+        DOM.authModal.classList.add('active');
+        DOM.loginError.style.display = 'none';
+        DOM.registerError.style.display = 'none';
+        DOM.loginForm.reset();
+        DOM.registerForm.reset();
+        DOM.tabLoginBtn.click();
+      });
+    }
+
+    // Close Auth Modal
+    if (DOM.closeAuthModal) {
+      DOM.closeAuthModal.addEventListener('click', () => {
+        DOM.authModal.classList.remove('active');
+      });
+    }
+
+    // Toggle Login/Register Tabs
+    if (DOM.tabLoginBtn && DOM.tabRegisterBtn) {
+      DOM.tabLoginBtn.addEventListener('click', () => {
+        DOM.tabLoginBtn.classList.add('active');
+        DOM.tabRegisterBtn.classList.remove('active');
+        DOM.loginForm.classList.add('active');
+        DOM.registerForm.classList.remove('active');
+      });
+
+      DOM.tabRegisterBtn.addEventListener('click', () => {
+        DOM.tabRegisterBtn.classList.add('active');
+        DOM.tabLoginBtn.classList.remove('active');
+        DOM.registerForm.classList.add('active');
+        DOM.loginForm.classList.remove('active');
+      });
+    }
+
+    // Submit Login Form
+    if (DOM.loginForm) {
+      DOM.loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        DOM.loginError.style.display = 'none';
+        
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+        const submitBtn = document.getElementById('login-submit-btn');
+
+        try {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Đang đăng nhập...';
+
+          const res = await apiCall('/api/auth/login', 'POST', { username, password });
+          if (res.success) {
+            state.auth.token = res.token;
+            state.auth.username = res.username;
+            localStorage.setItem('capinterest_token', res.token);
+            localStorage.setItem('capinterest_username', res.username);
+            
+            DOM.authModal.classList.remove('active');
+            
+            updateAuthUI();
+            await syncCollection();
+            checkMigrationAfterLogin();
+            showNotification(`Chào mừng quay trở lại, @${res.username}!`);
+          }
+        } catch (err) {
+          DOM.loginError.textContent = err.message;
+          DOM.loginError.style.display = 'block';
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Đăng nhập';
+        }
+      });
+    }
+
+    // Submit Register Form
+    if (DOM.registerForm) {
+      DOM.registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        DOM.registerError.style.display = 'none';
+
+        const username = document.getElementById('register-username').value.trim();
+        const password = document.getElementById('register-password').value;
+        const confirmPassword = document.getElementById('register-confirm-password').value;
+        const submitBtn = document.getElementById('register-submit-btn');
+
+        if (password !== confirmPassword) {
+          DOM.registerError.textContent = 'Mật khẩu xác nhận không khớp!';
+          DOM.registerError.style.display = 'block';
+          return;
+        }
+
+        try {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Đang đăng ký...';
+
+          const res = await apiCall('/api/auth/register', 'POST', { username, password });
+          if (res.success) {
+            state.auth.token = res.token;
+            state.auth.username = res.username;
+            localStorage.setItem('capinterest_token', res.token);
+            localStorage.setItem('capinterest_username', res.username);
+            
+            DOM.authModal.classList.remove('active');
+            
+            updateAuthUI();
+            await syncCollection();
+            checkMigrationAfterLogin();
+            showNotification(`Đăng ký tài khoản thành công!`);
+          }
+        } catch (err) {
+          DOM.registerError.textContent = err.message;
+          DOM.registerError.style.display = 'block';
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Đăng ký tài khoản';
+        }
+      });
+    }
+
+    // Logout Action
+    if (DOM.logoutBtn) {
+      DOM.logoutBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('Bạn có chắc muốn đăng xuất?')) {
+          state.auth.token = null;
+          state.auth.username = null;
+          localStorage.removeItem('capinterest_token');
+          localStorage.removeItem('capinterest_username');
+          
+          updateAuthUI();
+          syncCollection();
+          
+          DOM.migrationBanner.style.display = 'none';
+          
+          showNotification('Đã đăng xuất tài khoản.');
+
+          if (state.currentTab === 'collection') {
+            switchTab('feed');
+          }
+        }
+      });
+    }
+
+    // ─── Migration Event Listeners ───────────────────────────────────────────
+    
+    // Confirm Migration
+    if (DOM.migrationConfirmBtn) {
+      DOM.migrationConfirmBtn.addEventListener('click', async () => {
+        const localLikes = JSON.parse(localStorage.getItem('capinterest_likes_objects') || '[]');
+        if (localLikes.length === 0) {
+          DOM.migrationBanner.style.display = 'none';
+          return;
+        }
+
+        try {
+          DOM.migrationConfirmBtn.disabled = true;
+          DOM.migrationConfirmBtn.textContent = 'Đang đồng bộ...';
+          
+          const res = await apiCall('/api/collection/migrate', 'POST', { items: localLikes });
+          if (res.success) {
+            localStorage.removeItem('capinterest_likes');
+            localStorage.removeItem('capinterest_likes_objects');
+            
+            DOM.migrationBanner.style.display = 'none';
+            await syncCollection();
+            showNotification(`Đã đồng bộ thành công ${res.added} mẫu nón vào tài khoản của bạn!`);
+          }
+        } catch (err) {
+          console.error(err);
+          showNotification('Đồng bộ thất bại. Vui lòng thử lại sau.');
+        } finally {
+          DOM.migrationConfirmBtn.disabled = false;
+          DOM.migrationConfirmBtn.textContent = 'Đồng bộ ngay';
+        }
+      });
+    }
+
+    // Cancel Migration
+    if (DOM.migrationCancelBtn) {
+      DOM.migrationCancelBtn.addEventListener('click', () => {
+        DOM.migrationBanner.style.display = 'none';
+      });
+    }
     DOM.logoBtn.addEventListener('click', () => {
       switchTab('feed');
       DOM.searchInput.value = '';
@@ -990,6 +1325,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.target === DOM.detailModal) DOM.detailModal.classList.remove('active');
       if (e.target === DOM.settingsModal) DOM.settingsModal.classList.remove('active');
       if (e.target === DOM.addLinkModal) DOM.addLinkModal.classList.remove('active');
+      if (e.target === DOM.authModal) DOM.authModal.classList.remove('active');
     });
 
     // File input trigger
