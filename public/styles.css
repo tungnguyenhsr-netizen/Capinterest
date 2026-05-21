@@ -1010,7 +1010,7 @@ body {
   background: rgba(3, 7, 15, 0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  z-index: 200;
+  z-index: 1100; /* Covers mobile bottom nav bar (z-index 999) */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1018,6 +1018,8 @@ body {
   pointer-events: none;
   transition: opacity 0.3s ease;
   padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-overlay.active {
@@ -1036,6 +1038,7 @@ body {
   position: relative;
   transform: translateY(20px) scale(0.95);
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin: auto; /* Centering helper for flex overlay with scroll */
 }
 
 .modal-overlay.active .modal-card {
@@ -1529,13 +1532,60 @@ body {
     width: auto;
   }
   
-  /* Reduce modal padding on mobile */
-  .modal-info-col {
-    padding: 24px 20px;
+  /* Responsive Modals styling on mobile */
+  .modal-overlay {
+    padding: 12px 10px;
+    align-items: flex-start; /* Start from top so user can scroll down naturally on tall content */
+  }
+
+  .modal-card {
+    margin: 15px auto 60px auto; /* Centered, with extra bottom margin for mobile viewports */
+    border-radius: 18px;
+    max-height: none; /* Let it expand and scroll vertically via overlay */
+  }
+
+  .close-modal {
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+    background: rgba(13, 20, 35, 0.7); /* Better contrast over image backgrounds */
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
   
   .modal-image-col {
-    min-height: 250px;
+    min-height: 180px;
+    height: 260px; /* Constrain image height on mobile to prevent layout bloat */
+    background: #05080f;
+  }
+
+  .modal-image-col img {
+    height: 100%;
+    max-height: 260px;
+    width: 100%;
+    object-fit: contain;
+  }
+  
+  .modal-info-col {
+    padding: 20px 16px;
+    gap: 16px;
+  }
+
+  .modal-header h2 {
+    font-size: 22px;
+  }
+
+  .settings-card {
+    padding: 24px 16px;
+    gap: 16px;
+  }
+
+  .auth-card {
+    padding: 24px 16px;
+    gap: 16px;
+    width: 100%;
   }
 }
 
