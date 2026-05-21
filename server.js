@@ -477,6 +477,27 @@ function simulateAiAnalysis(res) {
   }, 2000); // Simulate scan delay
 }
 
+// ─── Health check endpoint (dùng cho UptimeRobot để giữ server thức) ─────────
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// ─── Global error handler (tránh crash khi có lỗi không xử lý được) ──────────
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err.message);
+  res.status(500).json({ success: false, error: 'Internal server error' });
+});
+
+// ─── Catch unhandled promise rejections (tránh crash process) ─────────────────
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err.message);
+  // Không exit process — giữ server chạy tiếp
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`CapInterest server running at http://localhost:${PORT}`);
