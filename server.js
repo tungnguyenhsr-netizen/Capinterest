@@ -180,14 +180,293 @@ async function fetchPinterestImages(query, page = 1) {
   }
 }
 
-// Search Endpoint - Google Custom Search + Pinterest merged
-app.get('/api/scrape', async (req, res) => {
-  const query = req.query.query || 'trendy caps';
-  const page = parseInt(req.query.page) || 1;
-  console.log(`Scraping request for query: "${query}", page: ${page}`);
+// ─── Google Drive & Storage Helpers ──────────────────────────────────────────
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+async function getGoogleAuthToken() {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON is not configured');
+  }
+  const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+  const jwtClaim = {
+    iss: serviceAccount.client_email,
+    scope: 'https://www.googleapis.com/auth/drive',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    iat: Math.floor(Date.now() / 1000)
+  };
   
+  const token = jwt.sign(jwtClaim, serviceAccount.private_key, { algorithm: 'RS256' });
+  
+  const res = await axios.post('https://oauth2.googleapis.com/token', {
+    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+    assertion: token
+  }, { timeout: 6000 });
+  
+  return res.data.access_token;
+}
+
+async function uploadToGoogleDrive(filename, mimeType, buffer) {
+  const accessToken = await getGoogleAuthToken();
+  const boundary = 'boundary_marker_capinterest';
+  const metadata = {
+    name: filename,
+    mimeType: mimeType
+  };
+  
+  const multipartBody = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`),
+    buffer,
+    Buffer.from(`\r\n--${boundary}--`)
+  ]);
+
+  const uploadRes = await axios.post(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+    multipartBody,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`
+      },
+      timeout: 10000
+    }
+  );
+  
+  const fileId = uploadRes.data.id;
+  if (!fileId) throw new Error('Google Drive upload did not return a file ID');
+  
+  // Set reader permission for anyone
+  await axios.post(
+    `https://www.googleapis.com/drive/v3/files/${fileId}/permissions`,
+    {
+      role: 'reader',
+      type: 'anyone'
+    },
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 6000
+    }
+  );
+  
+  return `https://drive.google.com/uc?export=view&id=${fileId}`;
+}
+
+async function downloadImageToBuffer(url) {
+  const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 8000 });
+  return Buffer.from(response.data);
+}
+
+function parseDataUrl(dataUrl) {
+  const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+  if (!matches || matches.length !== 3) {
+    throw new Error('Data URL không hợp lệ');
+  }
+  return {
+    mimeType: matches[1],
+    buffer: Buffer.from(matches[2], 'base64')
+  };
+}
+
+async function uploadImageToDriveOrLocal(imageInput, filenamePrefix = 'hat') {
+  let buffer;
+  let mimeType = 'image/jpeg';
+  let fileExtension = 'jpg';
+  
+  if (imageInput.startsWith('data:image/')) {
+    try {
+      const parsed = parseDataUrl(imageInput);
+      buffer = parsed.buffer;
+      mimeType = parsed.mimeType;
+      fileExtension = mimeType.split('/')[1] || 'jpg';
+    } catch (err) {
+      console.error('[Upload] Failed to parse base64 image:', err.message);
+      throw new Error('Không thể xử lý ảnh base64');
+    }
+  } else {
+    try {
+      buffer = await downloadImageToBuffer(imageInput);
+      const extMatch = imageInput.match(/\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i);
+      if (extMatch) {
+        fileExtension = extMatch[1].toLowerCase();
+        if (fileExtension === 'jpg') fileExtension = 'jpeg';
+        mimeType = `image/${fileExtension}`;
+        if (fileExtension === 'jpeg') fileExtension = 'jpg';
+      }
+    } catch (err) {
+      console.error(`[Upload] Failed to download image from ${imageInput}:`, err.message);
+      throw new Error('Không thể tải ảnh từ liên kết nón');
+    }
+  }
+
+  const filename = `${filenamePrefix}_${Date.now()}.${fileExtension}`;
+  
+  // Try Google Drive if configured
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+    try {
+      console.log('[Google Drive] Uploading file:', filename);
+      const directLink = await uploadToGoogleDrive(filename, mimeType, buffer);
+      console.log('[Google Drive] Upload success:', directLink);
+      return directLink;
+    } catch (err) {
+      console.warn('[Google Drive] Failed, falling back to local. Reason:', err.message);
+    }
+  }
+  
+  // Local fallback
+  const localFilePath = path.join(uploadsDir, filename);
+  fs.writeFileSync(localFilePath, buffer);
+  console.log('[Local Storage] Saved file locally:', localFilePath);
+  return `/uploads/${filename}`;
+}
+
+// ─── Cache & Search Limit Helpers ───────────────────────────────────────────
+const SCRAPED_HATS_FILE = path.join(DATA_DIR, 'scraped_hats.json');
+const SERPER_USAGE_FILE = path.join(DATA_DIR, 'serper_usage.json');
+const MAX_SERPER_CALLS_PER_DAY = 30;
+
+function getCachedHats() {
+  if (!fs.existsSync(SCRAPED_HATS_FILE)) return [];
   try {
-    // Fetch Google and Pinterest in parallel
+    return JSON.parse(fs.readFileSync(SCRAPED_HATS_FILE, 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
+function saveHatsToCache(hats, query = '') {
+  const cached = getCachedHats();
+  const seenUrls = new Set(cached.map(item => item.image));
+  let addedCount = 0;
+  
+  hats.forEach(hat => {
+    if (hat.image && !seenUrls.has(hat.image)) {
+      seenUrls.add(hat.image);
+      const cachedHat = {
+        id: hat.id || `scraped_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        title: hat.title || 'Trendy Cap',
+        image: hat.image,
+        thumbnail: hat.thumbnail || hat.image,
+        source: hat.source || 'scraped',
+        url: hat.url || '#',
+        creator: hat.creator || 'Streetwear',
+        category: hat.category || 'trendy',
+        tags: hat.tags || [hat.category || 'trendy'],
+        query: query ? query.toLowerCase().trim() : (hat.query || ''),
+        createdAt: hat.createdAt || new Date().toISOString()
+      };
+      cached.push(cachedHat);
+      addedCount++;
+    }
+  });
+  
+  if (addedCount > 0) {
+    fs.writeFileSync(SCRAPED_HATS_FILE, JSON.stringify(cached, null, 2));
+    console.log(`[Cache] Cached ${addedCount} new hats. Total cached: ${cached.length}`);
+  }
+}
+
+function checkSerperLimit() {
+  if (!fs.existsSync(SERPER_USAGE_FILE)) return true;
+  try {
+    const data = JSON.parse(fs.readFileSync(SERPER_USAGE_FILE, 'utf8'));
+    const today = new Date().toISOString().slice(0, 10);
+    if (data.lastReset !== today) return true; // New day
+    return data.count < MAX_SERPER_CALLS_PER_DAY;
+  } catch {
+    return true;
+  }
+}
+
+function incrementSerperUsage() {
+  const today = new Date().toISOString().slice(0, 10);
+  let data = { count: 0, lastReset: today };
+  if (fs.existsSync(SERPER_USAGE_FILE)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(SERPER_USAGE_FILE, 'utf8'));
+      if (parsed.lastReset === today) data = parsed;
+    } catch {}
+  }
+  data.count += 1;
+  fs.writeFileSync(SERPER_USAGE_FILE, JSON.stringify(data, null, 2));
+  console.log(`[Serper Limit] Usage count: ${data.count}/${MAX_SERPER_CALLS_PER_DAY}`);
+}
+
+function determineCategoryFromQuery(query) {
+  const q = query.toLowerCase();
+  if (q.includes('snapback')) return 'snapback';
+  if (q.includes('bucket')) return 'bucket';
+  if (q.includes('beanie') || q.includes('len')) return 'beanie';
+  if (q.includes('dad hat') || q.includes('lưỡi trai') || q.includes('classic') || q.includes('vintage')) return 'dadhat';
+  if (q.includes('techwear') || q.includes('visor') || q.includes('gương')) return 'techwear';
+  if (q.includes('creative') || q.includes('lạ') || q.includes('độc')) return 'creative';
+  if (q.includes('trendy') || q.includes('xu hướng')) return 'trendy';
+  return 'trendy';
+}
+
+// Search Endpoint - Google Custom Search + Pinterest merged with Caching and Credit Limiter
+app.get('/api/scrape', async (req, res) => {
+  const query = (req.query.query || 'trendy caps').toLowerCase().trim();
+  const page = parseInt(req.query.page) || 1;
+  const category = req.query.category || 'all';
+  console.log(`Scraping request for query: "${query}", page: ${page}, category: ${category}`);
+  
+  const cachedHats = getCachedHats();
+  let matchedHats = [];
+  
+  const isDefaultFeed = query === 'trendy caps' || query === 'all' || query === '';
+  
+  if (isDefaultFeed) {
+    // Show all cached hats, sorting user added or newest first
+    matchedHats = cachedHats.slice().reverse();
+  } else {
+    // Search cached hats by keyword match
+    const queryWords = query.split(/\s+/).filter(w => w.length > 1);
+    matchedHats = cachedHats.filter(hat => {
+      const titleLower = (hat.title || '').toLowerCase();
+      const tags = Array.isArray(hat.tags) ? hat.tags.map(t => t.toLowerCase()) : [];
+      const catLower = (hat.category || '').toLowerCase();
+      
+      if (hat.query === query) return true;
+      
+      return queryWords.some(word => 
+        titleLower.includes(word) || 
+        tags.some(t => t.includes(word)) || 
+        catLower.includes(word)
+      );
+    });
+  }
+
+  const itemsPerPage = 12;
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedCache = matchedHats.slice(startIndex, startIndex + itemsPerPage);
+  
+  // If we have enough cached data, serve from cache
+  if (paginatedCache.length >= 8) {
+    console.log(`[Cache Hit] Serving ${paginatedCache.length} cached results for query "${query}" (page ${page})`);
+    return res.json({ success: true, source: 'cache', data: paginatedCache });
+  }
+
+  // Cache miss or not enough items - check credit limit
+  const canScrape = checkSerperLimit();
+  if (!canScrape) {
+    console.warn(`[Limit Reached] Serper limit reached. Serving fallback cache.`);
+    const fallbackResults = matchedHats.length > 0 ? matchedHats : cachedHats.slice(0, 15);
+    const paginatedFallback = fallbackResults.slice(startIndex, startIndex + itemsPerPage);
+    return res.json({ 
+      success: true, 
+      source: 'fallback-cache', 
+      data: paginatedFallback,
+      info: 'Credit limit reached. Showing results from cache.' 
+    });
+  }
+
+  try {
     const [googleResults, pinterestResults] = await Promise.all([
       fetchGoogleImages(query, page).catch(err => {
         console.warn('Google fetching failed:', err.message);
@@ -199,11 +478,8 @@ app.get('/api/scrape', async (req, res) => {
       })
     ]);
 
-    // Merge and deduplicate by image URL
     const seenUrls = new Set();
     const merged = [];
-    
-    // Interleave: alternate Google and Pinterest for variety
     const maxLen = Math.max(googleResults.length, pinterestResults.length);
     for (let i = 0; i < maxLen; i++) {
       if (i < googleResults.length) {
@@ -223,21 +499,91 @@ app.get('/api/scrape', async (req, res) => {
     }
 
     const sources = [];
-    if (googleResults.length > 0) sources.push('google');
+    if (googleResults.length > 0) {
+      sources.push('google');
+      incrementSerperUsage();
+    }
     if (pinterestResults.length > 0) sources.push('pinterest');
     
     if (merged.length > 0) {
-      console.log(`Merged ${googleResults.length} Google + ${pinterestResults.length} Pinterest = ${merged.length} unique results for page ${page}.`);
-      return res.json({ success: true, source: sources.join('+'), data: merged });
+      const cat = category !== 'all' ? category : determineCategoryFromQuery(query);
+      const hatsWithCat = merged.map(h => ({
+        ...h,
+        category: cat,
+        tags: [cat, ...query.split(/\s+/).filter(w => w.length > 2)]
+      }));
+      
+      saveHatsToCache(hatsWithCat, query);
+      
+      // Blend cached/user-added matching hats into page 1 results to make them visible to other users
+      let blendedData = hatsWithCat;
+      if (page === 1 && matchedHats.length > 0) {
+        const seen = new Set(matchedHats.map(h => h.image));
+        const filteredNew = hatsWithCat.filter(h => !seen.has(h.image));
+        blendedData = [...matchedHats, ...filteredNew];
+      }
+      
+      return res.json({ success: true, source: sources.join('+'), data: blendedData });
     }
 
-    return res.status(404).json({ success: false, error: 'Không tìm thấy kết quả nào từ Google Custom Search hoặc Pinterest.' });
+    // Fallback if search returns nothing
+    const fallbackResults = matchedHats.length > 0 ? matchedHats : cachedHats.slice(0, 15);
+    const paginatedFallback = fallbackResults.slice(startIndex, startIndex + itemsPerPage);
+    return res.json({ 
+      success: true, 
+      source: 'fallback-cache', 
+      data: paginatedFallback,
+      info: 'No results found. Showing results from cache.' 
+    });
 
   } catch (error) {
     console.error('All search options failed:', error.message);
-    return res.status(500).json({ success: false, error: error.message });
+    const fallbackResults = matchedHats.length > 0 ? matchedHats : cachedHats.slice(0, 15);
+    const paginatedFallback = fallbackResults.slice(startIndex, startIndex + itemsPerPage);
+    return res.json({ 
+      success: true, 
+      source: 'fallback-cache', 
+      data: paginatedFallback,
+      error: error.message 
+    });
   }
 });
+
+// POST /api/hats/add — Thêm nón mới (Dán link) và chia sẻ cho toàn bộ user
+app.post('/api/hats/add', async (req, res) => {
+  const { title, image, creator, category, url, tags } = req.body || {};
+  if (!image) {
+    return res.status(400).json({ success: false, error: 'Thiếu liên kết hình ảnh nón' });
+  }
+
+  try {
+    console.log(`[Hats API] Adding user-shared hat: "${title}"`);
+    const storedImageUrl = await uploadImageToDriveOrLocal(image, 'user_hat');
+    
+    const newHat = {
+      id: 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+      title: title || 'Nón do người dùng chia sẻ',
+      image: storedImageUrl,
+      thumbnail: storedImageUrl,
+      creator: creator || 'Người dùng chia sẻ',
+      category: category || 'trendy',
+      source: 'user-added',
+      url: url || storedImageUrl,
+      tags: Array.isArray(tags) ? tags : [category || 'trendy', 'user-added'],
+      createdAt: new Date().toISOString()
+    };
+    
+    // Save hat directly into shared cache
+    saveHatsToCache([newHat], 'user-added');
+    
+    console.log(`[Hats API] Hat successfully saved & shared globally: ${newHat.id}`);
+    res.json({ success: true, data: newHat });
+  } catch (err) {
+    console.error('[Hats API] Error adding custom hat:', err.message);
+    res.status(500).json({ success: false, error: err.message || 'Không thể lưu nón chia sẻ' });
+  }
+});
+
 
 // Resolve Link Endpoint (Dán link nón tự động)
 app.post('/api/resolve-link', async (req, res) => {

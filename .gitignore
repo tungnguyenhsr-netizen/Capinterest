@@ -12,4 +12,5 @@ search_*.js
 test_*.js
 *.html
 data/
+public/uploads/
 

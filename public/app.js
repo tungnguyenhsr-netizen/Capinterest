@@ -1884,7 +1884,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save added Pin
     if (DOM.saveAddBtn) {
-      DOM.saveAddBtn.addEventListener('click', () => {
+      DOM.saveAddBtn.addEventListener('click', async () => {
         const url = DOM.addUrlInput.value.trim();
         const image = DOM.resolvePreviewImg.src || url;
 
@@ -1893,29 +1893,59 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        // Create new hat item
         const category = DOM.addCategorySelect.value;
-        const newHat = {
-          id: 'man-' + Date.now(),
-          title: DOM.addTitleInput.value.trim() || 'Nón liên kết',
-          image: image,
-          creator: DOM.addCreatorInput.value.trim() || 'Link trực tiếp',
-          category: category,
-          source: 'User Link',
-          url: url,
-          tags: [category, 'user-link', 'headwear']
-        };
+        const title = DOM.addTitleInput.value.trim() || 'Nón liên kết';
+        const creator = DOM.addCreatorInput.value.trim() || 'Link trực tiếp';
+        const tags = [category, 'user-added', 'headwear'];
 
-        // Add to state and save
-        state.manualHats.unshift(newHat);
-        localStorage.setItem('capinterest_manual_hats', JSON.stringify(state.manualHats));
+        // Show loading spinner/disabled state
+        const originalText = DOM.saveAddBtn.textContent;
+        DOM.saveAddBtn.disabled = true;
+        DOM.saveAddBtn.textContent = 'Đang lưu nón...';
 
-        DOM.addLinkModal.classList.remove('active');
-        showNotification('Đã thêm nón mới vào bản tin của bạn!');
-        
-        // Refresh grid
-        const query = state.searchQuery ? state.searchQuery : (state.selectedCategory === 'all' ? 'trendy caps' : state.selectedCategory + ' headwear');
-        fetchScrapedHats(query);
+        try {
+          // Call Backend API to add & share the hat
+          const result = await apiCall('/api/hats/add', 'POST', {
+            title,
+            image,
+            creator,
+            category,
+            url,
+            tags
+          });
+
+          if (!result.success) {
+            throw new Error(result.error || 'Không thể lưu nón chia sẻ');
+          }
+
+          const savedHat = result.data;
+
+          // Add to local state manualHats and save to localStorage
+          state.manualHats.unshift(savedHat);
+          localStorage.setItem('capinterest_manual_hats', JSON.stringify(state.manualHats));
+
+          // Hide modal and reset inputs
+          DOM.addLinkModal.classList.remove('active');
+          DOM.addUrlInput.value = '';
+          DOM.addTitleInput.value = '';
+          DOM.addCreatorInput.value = '';
+          DOM.resolvePreviewImg.src = '';
+          DOM.resolvePreviewContainer.style.display = 'none';
+          DOM.resolveStatus.style.display = 'none';
+
+          showNotification('Đã lưu nón và chia sẻ thành công lên hệ thống!');
+
+          // Refresh grid
+          const query = state.searchQuery ? state.searchQuery : (state.selectedCategory === 'all' ? 'trendy caps' : state.selectedCategory + ' headwear');
+          fetchScrapedHats(query);
+
+        } catch (err) {
+          console.error('[Add Hat] Error:', err);
+          showNotification(`Lỗi: ${err.message || 'Không thể lưu nón'}`);
+        } finally {
+          DOM.saveAddBtn.disabled = false;
+          DOM.saveAddBtn.textContent = originalText;
+        }
       });
     }
     
