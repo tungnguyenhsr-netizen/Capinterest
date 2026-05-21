@@ -183,6 +183,19 @@ body {
   box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
 }
 
+.nav-btn.accent-btn {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.08), rgba(255, 0, 127, 0.08));
+  border-color: rgba(0, 240, 255, 0.3);
+  color: var(--text-primary);
+}
+
+.nav-btn.accent-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(255, 0, 127, 0.15));
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+  transform: translateY(-1px);
+}
+
 .icon-btn {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-light);
@@ -1183,4 +1196,79 @@ body {
 .empty-state p {
   font-size: 16px;
   font-weight: 500;
+}
+
+/* ============================================
+   Collection / Liked Section
+   ============================================ */
+
+/* Badge on the Collection nav button */
+.collection-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+  line-height: 1;
+  box-shadow: 0 0 8px rgba(255, 0, 127, 0.5);
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 0, 127, 0.5); }
+  50% { box-shadow: 0 0 16px rgba(255, 0, 127, 0.8); }
+}
+
+/* Collection header */
+.collection-header {
+  padding: 10px 0 24px 0;
+}
+
+.collection-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.collection-title-row h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+}
+
+.collection-count {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border-light);
+}
+
+.collection-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+#collection-section .masonry-wrapper {
+  padding: 0;
+}
+
+/* Nav button relative positioning for badge */
+.nav-btn {
+  position: relative;
 }

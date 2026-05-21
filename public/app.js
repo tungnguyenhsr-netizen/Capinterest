@@ -10,8 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
     searchQuery: '',
     selectedCategory: 'all',
     likedItems: JSON.parse(localStorage.getItem('capinterest_likes') || '[]'),
+    likedItemsObjects: JSON.parse(localStorage.getItem('capinterest_likes_objects') || '[]'),
+    manualHats: JSON.parse(localStorage.getItem('capinterest_manual_hats') || '[]'),
     scrapedData: [],
+    loadedImageUrls: new Set(),
     selectedImageBase64: null,
+    currentPage: 1,
+    isLoadingNextPage: false,
+    hasMore: true,
     defaultHats: [
       {
         id: 'def-1',
@@ -114,7 +120,31 @@ document.addEventListener('DOMContentLoaded', () => {
     settingsMode: document.getElementById('settings-mode'),
     apikeyGroup: document.getElementById('apikey-group'),
     apikeyInput: document.getElementById('apikey-input'),
-    saveSettingsBtn: document.getElementById('save-settings-btn')
+    saveSettingsBtn: document.getElementById('save-settings-btn'),
+
+    // Add Link Modal
+    addLinkBtn: document.getElementById('add-link-btn'),
+    addLinkModal: document.getElementById('add-link-modal'),
+    closeAddLinkModal: document.getElementById('close-add-modal'),
+    addUrlInput: document.getElementById('add-url-input'),
+    resolveUrlBtn: document.getElementById('resolve-url-btn'),
+    resolveStatus: document.getElementById('resolve-status'),
+    resolvePreviewContainer: document.getElementById('resolve-preview-container'),
+    resolvePreviewImg: document.getElementById('resolve-preview-img'),
+    addTitleInput: document.getElementById('add-title-input'),
+    addCreatorInput: document.getElementById('add-creator-input'),
+    addCategorySelect: document.getElementById('add-category-select'),
+    saveAddBtn: document.getElementById('save-add-btn'),
+    infiniteLoading: document.getElementById('infinite-loading'),
+
+    // Collection
+    collectionNavBtn: document.getElementById('collection-nav-btn'),
+    collectionBadge: document.getElementById('collection-badge'),
+    collectionSection: document.getElementById('collection-section'),
+    collectionGrid: document.getElementById('collection-grid'),
+    collectionCount: document.getElementById('collection-count'),
+    collectionEmpty: document.getElementById('collection-empty'),
+    clearCollectionBtn: document.getElementById('clear-collection-btn')
   };
 
   // Initialize
@@ -123,23 +153,84 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     renderSampleThumbnails();
     
+    // Add default and manual hats to seen urls to prevent duplicates
+    state.defaultHats.forEach(h => state.loadedImageUrls.add(h.image));
+    state.manualHats.forEach(h => state.loadedImageUrls.add(h.image));
+    
+    // Show collection badge count on load
+    updateCollectionBadge();
+    
     // Initial fetch for cap feed
     fetchScrapedHats('trendy caps');
   }
 
+  // Helper to get active query or randomized home feed query on refresh/load
+  function getActiveQuery(isRefresh = false) {
+    if (state.searchQuery) {
+      return state.searchQuery + (state.selectedCategory !== 'all' ? ' ' + state.selectedCategory : '');
+    }
+    
+    if (state.selectedCategory !== 'all') {
+      return `${state.selectedCategory} headwear`;
+    }
+    
+    // Default home feed: choose a random query on refresh so it feels like a real Pinterest home feed
+    const defaultQueries = [
+      'trendy caps',
+      'hypebeast caps',
+      'streetwear headwear',
+      'unique hats fashion',
+      'cool caps designs',
+      'designer hats pinterest',
+      'futuristic cap design',
+      'stylish bucket hats',
+      'vintage caps aesthetic'
+    ];
+    
+    if (isRefresh) {
+      const randIdx = Math.floor(Math.random() * defaultQueries.length);
+      return defaultQueries[randIdx];
+    }
+    
+    return 'trendy caps';
+  }
+
   // 1. Navigation & Tabs
   function switchTab(tabName) {
+    const prevTab = state.currentTab;
     state.currentTab = tabName;
+    
+    // Deactivate all nav buttons and sections
+    DOM.feedNavBtn.classList.remove('active');
+    DOM.collectionNavBtn.classList.remove('active');
+    DOM.ailabNavBtn.classList.remove('active');
+    DOM.feedSection.classList.remove('active');
+    DOM.collectionSection.classList.remove('active');
+    DOM.ailabSection.classList.remove('active');
+    
+    // Show category bar only on feed tab
+    DOM.categoryBar.style.display = (tabName === 'feed') ? '' : 'none';
     
     if (tabName === 'feed') {
       DOM.feedNavBtn.classList.add('active');
-      DOM.ailabNavBtn.classList.remove('active');
       DOM.feedSection.classList.add('active');
-      DOM.ailabSection.classList.remove('active');
-    } else {
-      DOM.feedNavBtn.classList.remove('active');
+      
+      // If we switched to feed from another tab, refresh
+      if (prevTab !== 'feed') {
+        const query = getActiveQuery(true);
+        fetchScrapedHats(query);
+      } else {
+        // Ensure infinite scroll can continue
+        state.hasMore = true;
+        setTimeout(checkScrollHeight, 100);
+      }
+    } else if (tabName === 'collection') {
+      DOM.collectionNavBtn.classList.add('active');
+      DOM.collectionSection.classList.add('active');
+      renderCollection();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (tabName === 'ailab') {
       DOM.ailabNavBtn.classList.add('active');
-      DOM.feedSection.classList.remove('active');
       DOM.ailabSection.classList.add('active');
       
       // Auto-initialize analyzer elements
@@ -198,65 +289,147 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 3. Web Scraping & Feed Rendering
-  async function fetchScrapedHats(query) {
-    DOM.scrapeStatus.style.display = 'flex';
-    DOM.scrapeStatusText.textContent = `Đang tìm kiếm nón thiết kế độc lạ: "${query}"...`;
-    DOM.pinterestGrid.innerHTML = '';
-    DOM.emptyState.style.display = 'none';
+  async function fetchScrapedHats(query, page = 1, append = false) {
+    if (append) {
+      state.isLoadingNextPage = true;
+      if (DOM.infiniteLoading) DOM.infiniteLoading.style.display = 'flex';
+    } else {
+      DOM.scrapeStatus.style.display = 'flex';
+      DOM.scrapeStatusText.textContent = `Đang tìm kiếm nón thiết kế độc lạ: "${query}"...`;
+      DOM.pinterestGrid.innerHTML = '';
+      DOM.emptyState.style.display = 'none';
+      state.currentPage = 1;
+      state.hasMore = true;
+      
+      // Reset seen image URLs, keeping defaults and manual hats
+      state.loadedImageUrls.clear();
+      state.defaultHats.forEach(h => state.loadedImageUrls.add(h.image));
+      state.manualHats.forEach(h => state.loadedImageUrls.add(h.image));
+    }
 
     try {
-      const response = await fetch(`/api/scrape?query=${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/scrape?query=${encodeURIComponent(query)}&page=${page}&_t=${Date.now()}`);
       const result = await response.json();
 
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Cào ảnh thất bại');
       }
 
-      state.scrapedData = result.data;
-      
-      // Blend default assets with scraped data to give beautiful results
-      let displayData = [];
-      
-      if (state.selectedCategory === 'all' && query === 'trendy caps') {
-        // Inject default high-res items at the top
-        displayData = [...state.defaultHats, ...state.scrapedData];
-      } else {
-        // Filter default items if category is selected
-        const filteredDefaults = state.defaultHats.filter(h => 
-          state.selectedCategory === 'all' || h.category === state.selectedCategory
-        );
-        displayData = [...filteredDefaults, ...state.scrapedData];
+      // Map and filter out duplicates using state.loadedImageUrls
+      const newItems = [];
+      (result.data || []).forEach(item => {
+        if (!item.image || state.loadedImageUrls.has(item.image)) return;
+        state.loadedImageUrls.add(item.image);
+        
+        let itemCat = 'trendy';
+        const textToTest = `${item.title} ${query}`.toLowerCase();
+        if (textToTest.includes('snapback')) itemCat = 'snapback';
+        else if (textToTest.includes('beanie')) itemCat = 'beanie';
+        else if (textToTest.includes('bucket')) itemCat = 'bucket';
+        else if (textToTest.includes('techwear') || textToTest.includes('visor')) itemCat = 'techwear';
+        else if (textToTest.includes('dad') || textToTest.includes('vintage') || textToTest.includes('corduroy')) itemCat = 'dadhat';
+        else if (textToTest.includes('creative') || textToTest.includes('crazy') || textToTest.includes('weird')) itemCat = 'creative';
+        
+        newItems.push({
+          ...item,
+          category: itemCat,
+          id: item.id || `scr-${Math.random().toString(36).substr(2, 9)}`
+        });
+      });
+
+      // Check raw API results vs filtered results
+      const rawCount = (result.data || []).length;
+
+      if (rawCount === 0) {
+        // API truly has no more results
+        state.hasMore = false;
+      } else if (newItems.length === 0 && rawCount > 0) {
+        // All results were duplicates — skip this page and try next automatically
+        console.log(`Page ${page}: all ${rawCount} results were duplicates, auto-loading next page...`);
+        state.currentPage++;
+        if (state.currentPage <= 50) { // safety limit
+          setTimeout(() => fetchScrapedHats(query, state.currentPage, append), 200);
+          return;
+        } else {
+          state.hasMore = false;
+        }
       }
 
-      if (displayData.length === 0) {
-        DOM.emptyState.style.display = 'flex';
+      if (append) {
+        state.scrapedData = [...state.scrapedData, ...newItems];
+        if (newItems.length > 0) {
+          renderGrid(newItems, true);
+        }
       } else {
-        renderGrid(displayData);
+        state.scrapedData = newItems;
+        
+        // Blend manual hats, default assets, and scraped data
+        let displayData = [];
+        const filteredManuals = state.manualHats.filter(h => 
+          state.selectedCategory === 'all' || h.category === state.selectedCategory
+        );
+        
+        if (state.selectedCategory === 'all' && query === 'trendy caps') {
+          // Inject manual hats + default high-res items at the top
+          displayData = [...filteredManuals, ...state.defaultHats, ...state.scrapedData];
+        } else {
+          // Filter default items if category is selected
+          const filteredDefaults = state.defaultHats.filter(h => 
+            state.selectedCategory === 'all' || h.category === state.selectedCategory
+          );
+          displayData = [...filteredManuals, ...filteredDefaults, ...state.scrapedData];
+        }
+
+        if (displayData.length === 0) {
+          DOM.emptyState.style.display = 'flex';
+        } else {
+          renderGrid(displayData, false);
+        }
       }
 
     } catch (error) {
       console.error('Error fetching hats:', error);
-      // Fallback: Display only default images on error
-      const filteredDefaults = state.defaultHats.filter(h => 
-        state.selectedCategory === 'all' || h.category === state.selectedCategory
-      );
-      renderGrid(filteredDefaults);
-      showNotification('Không cào được ảnh mới. Đang hiển thị bộ sưu tập mặc định.');
+      if (!append) {
+        // Fallback: Display manual + default images on error
+        const filteredManuals = state.manualHats.filter(h => 
+          state.selectedCategory === 'all' || h.category === state.selectedCategory
+        );
+        const filteredDefaults = state.defaultHats.filter(h => 
+          state.selectedCategory === 'all' || h.category === state.selectedCategory
+        );
+        renderGrid([...filteredManuals, ...filteredDefaults], false);
+        showNotification('Đã hiển thị bộ sưu tập nón có sẵn.');
+      }
     } finally {
-      DOM.scrapeStatus.style.display = 'none';
+      if (append) {
+        state.isLoadingNextPage = false;
+        if (DOM.infiniteLoading) DOM.infiniteLoading.style.display = 'none';
+      } else {
+        DOM.scrapeStatus.style.display = 'none';
+      }
+      
+      // Auto-trigger load if viewport is not full and we have more items
+      if (state.currentTab === 'feed') {
+        setTimeout(checkScrollHeight, 300);
+      }
     }
   }
 
-  function renderGrid(items) {
-    DOM.pinterestGrid.innerHTML = '';
+  function renderGrid(items, append = false) {
+    if (!append) {
+      DOM.pinterestGrid.innerHTML = '';
+    }
     
+    const currentCardCount = DOM.pinterestGrid.childElementCount;
+
     items.forEach((item, index) => {
       const isLiked = state.likedItems.includes(item.id || item.image);
       
       const card = document.createElement('div');
       card.className = 'cap-card';
       // Vary aspect ratios a bit to look like Pinterest (using index logic)
-      const mockHeight = index % 3 === 0 ? '300px' : (index % 3 === 1 ? '220px' : '260px');
+      const mockIndex = currentCardCount + index;
+      const mockHeight = mockIndex % 3 === 0 ? '300px' : (mockIndex % 3 === 1 ? '220px' : '260px');
       
       card.innerHTML = `
         <img src="${item.image}" alt="${item.title}" loading="lazy" style="min-height: ${mockHeight}">
@@ -289,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const likeBtn = card.querySelector('.like-btn');
       likeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        toggleLike(item.id || item.image, likeBtn);
+        toggleLike(item, likeBtn);
       });
 
       // Analyze Button Event
@@ -303,18 +476,181 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function toggleLike(itemId, btnElement) {
+  function toggleLike(item, btnElement) {
+    const itemId = item.id || item.image;
     const idx = state.likedItems.indexOf(itemId);
+    
     if (idx > -1) {
+      // Unlike
       state.likedItems.splice(idx, 1);
       btnElement.classList.remove('liked');
+      state.likedItemsObjects = state.likedItemsObjects.filter(o => (o.id || o.image) !== itemId);
       showNotification('Đã bỏ lưu nón.');
     } else {
+      // Like
       state.likedItems.push(itemId);
       btnElement.classList.add('liked');
+      state.likedItemsObjects.push(item);
       showNotification('Đã lưu vào bộ sưu tập nón yêu thích!');
     }
     localStorage.setItem('capinterest_likes', JSON.stringify(state.likedItems));
+    localStorage.setItem('capinterest_likes_objects', JSON.stringify(state.likedItemsObjects));
+    updateCollectionBadge();
+    
+    // If collection tab is currently shown, re-render it live
+    if (state.currentTab === 'collection') {
+      renderCollection();
+    }
+  }
+
+  function updateCollectionBadge() {
+    const count = state.likedItemsObjects.length;
+    if (DOM.collectionBadge) {
+      if (count > 0) {
+        DOM.collectionBadge.textContent = count > 99 ? '99+' : count;
+        DOM.collectionBadge.style.display = 'inline-flex';
+      } else {
+        DOM.collectionBadge.style.display = 'none';
+      }
+    }
+  }
+
+  function renderCollection() {
+    const items = state.likedItemsObjects;
+    const grid = DOM.collectionGrid;
+    const emptyState = DOM.collectionEmpty;
+    const clearBtn = DOM.clearCollectionBtn;
+    
+    // Update count
+    DOM.collectionCount.textContent = `${items.length} mẫu nón`;
+    
+    if (items.length === 0) {
+      grid.innerHTML = '';
+      emptyState.style.display = 'flex';
+      clearBtn.style.display = 'none';
+      return;
+    }
+    
+    emptyState.style.display = 'none';
+    clearBtn.style.display = 'inline-flex';
+    grid.innerHTML = '';
+    
+    items.forEach((item, index) => {
+      const card = document.createElement('div');
+      card.className = 'cap-card';
+      
+      // Vary aspect ratios like Pinterest feed
+      const mockHeight = index % 3 === 0 ? '300px' : (index % 3 === 1 ? '220px' : '260px');
+      
+      card.innerHTML = `
+        <img src="${item.image}" alt="${item.title}" loading="lazy" style="min-height: ${mockHeight}" onerror="this.parentElement.remove();">
+        <div class="cap-card-overlay">
+          <div class="overlay-top">
+            <button class="like-btn liked" data-id="${item.id || item.image}" title="Bỏ lưu">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </button>
+          </div>
+          <div class="overlay-bottom">
+            <h4 class="overlay-title">${item.title || 'Nón yêu thích'}</h4>
+            <div class="overlay-meta">
+              <span>@${item.creator || item.source || 'streetwear'}</span>
+              <button class="card-btn" data-action="analyze">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
+                Quét AI
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Event listener for opening detail modal on card click (except when clicking buttons)
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.like-btn') || e.target.closest('.card-btn')) return;
+        openDetailModal(item);
+      });
+      
+      // Unlike handler
+      const likeBtn = card.querySelector('.like-btn');
+      likeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleLike(item, likeBtn);
+      });
+      
+      // Analyze handler
+      const analyzeBtn = card.querySelector('.card-btn');
+      analyzeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        switchTab('ailab');
+        DOM.dropzonePrompt.style.display = 'none';
+        DOM.scanViewport.style.display = 'flex';
+        DOM.scanPreview.src = item.image;
+        DOM.startScanBtn.disabled = false;
+        DOM.startScanBtn.classList.add('active');
+        DOM.resetScanBtn.style.display = 'block';
+        
+        // Set image for analysis
+        state.selectedImageBase64 = item.image;
+        
+        DOM.resultPlaceholder.style.display = 'flex';
+        DOM.resultContent.style.display = 'none';
+      });
+      
+      grid.appendChild(card);
+    });
+  }
+
+  function getFavoriteCategories() {
+    const counts = {};
+    state.likedItemsObjects.forEach(item => {
+      if (item && item.category) {
+        counts[item.category] = (counts[item.category] || 0) + 1;
+      }
+    });
+    return Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  }
+
+  async function loadNextPage() {
+    state.currentPage++;
+    
+    let query = 'trendy caps';
+    
+    if (state.searchQuery) {
+      query = state.searchQuery + (state.selectedCategory !== 'all' ? ' ' + state.selectedCategory : '');
+    } else if (state.selectedCategory !== 'all') {
+      query = `${state.selectedCategory} headwear`;
+    } else {
+      // DEFAULT HOME FEED: Personalize the next page based on user likes!
+      const favorites = getFavoriteCategories();
+      if (favorites.length > 0) {
+        // Rotate favorite categories
+        const favIndex = (state.currentPage - 2) % favorites.length;
+        const targetFavCategory = favorites[favIndex];
+        query = `${targetFavCategory} headwear`;
+        console.log(`Personalizing feed: Loading page ${state.currentPage} with favorite category "${targetFavCategory}"`);
+      } else {
+        // Fallback: alternate between standard categories
+        const standardCats = ['snapback', 'beanie', 'bucket', 'dadhat', 'techwear', 'creative'];
+        const catIndex = (state.currentPage - 2) % standardCats.length;
+        const targetCat = standardCats[catIndex];
+        query = `${targetCat} headwear`;
+        console.log(`Fallback page: Loading page ${state.currentPage} with default category "${targetCat}"`);
+      }
+    }
+
+    await fetchScrapedHats(query, state.currentPage, true);
+  }
+
+  function checkScrollHeight() {
+    if (state.currentTab !== 'feed' || state.isLoadingNextPage || !state.hasMore) return;
+    
+    const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+    const clientHeight = window.innerHeight;
+    
+    // Check if total scroll height is too close to window height (meaning scrollbar is missing or short)
+    if (scrollHeight <= clientHeight + 400) {
+      console.log('Viewport height is low, auto-loading next page to ensure continuous scrolling...');
+      loadNextPage();
+    }
   }
 
   // 4. Detail Modal Handling
@@ -426,17 +762,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Setup Event Listeners
   function registerEventListeners() {
+    // Infinite Scroll scroll handler
+    window.addEventListener('scroll', () => {
+      if (state.currentTab !== 'feed' || state.isLoadingNextPage || !state.hasMore) return;
+
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = window.innerHeight;
+      const threshold = 800; // Load when user is within 800px of the bottom (larger threshold for continuous feel)
+
+      if (scrollTop + clientHeight >= scrollHeight - threshold) {
+        loadNextPage();
+      }
+    });
+
     // Navigation Tabs
-    DOM.feedNavBtn.addEventListener('click', () => switchTab('feed'));
+    DOM.feedNavBtn.addEventListener('click', () => {
+      if (state.currentTab === 'feed') {
+        // Smooth scroll to top and refresh
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const query = getActiveQuery(true);
+        fetchScrapedHats(query);
+      } else {
+        switchTab('feed');
+      }
+    });
+    DOM.collectionNavBtn.addEventListener('click', () => switchTab('collection'));
     DOM.ailabNavBtn.addEventListener('click', () => switchTab('ailab'));
+
+    // Clear all collection
+    DOM.clearCollectionBtn.addEventListener('click', () => {
+      if (confirm('Bạn có chắc muốn xóa toàn bộ bộ sưu tập?')) {
+        state.likedItems = [];
+        state.likedItemsObjects = [];
+        localStorage.setItem('capinterest_likes', '[]');
+        localStorage.setItem('capinterest_likes_objects', '[]');
+        updateCollectionBadge();
+        renderCollection();
+        showNotification('Đã xóa toàn bộ bộ sưu tập.');
+      }
+    });
     DOM.logoBtn.addEventListener('click', () => {
       switchTab('feed');
       DOM.searchInput.value = '';
       DOM.searchClearBtn.style.display = 'none';
+      state.searchQuery = '';
       state.selectedCategory = 'all';
       document.querySelectorAll('.cat-pill').forEach(pill => pill.classList.remove('active'));
       document.querySelector('[data-category="all"]').classList.add('active');
-      fetchScrapedHats('trendy caps');
+      const query = getActiveQuery(true);
+      fetchScrapedHats(query);
     });
 
     // Search bar submit
@@ -469,6 +844,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const category = pill.dataset.category;
       state.selectedCategory = category;
+      // Reset pagination and allow further loading
+      state.hasMore = true;
+      state.currentPage = 1; // will be reset in fetchScrapedHats
 
       let query = 'trendy caps';
       if (category !== 'all') {
@@ -503,11 +881,115 @@ document.addEventListener('DOMContentLoaded', () => {
     DOM.closeDetailModal.addEventListener('click', () => {
       DOM.detailModal.classList.remove('active');
     });
+
+    // Add Link Modal toggles
+    if (DOM.addLinkBtn) {
+      DOM.addLinkBtn.addEventListener('click', () => {
+        DOM.addLinkModal.classList.add('active');
+        // Reset modal fields
+        DOM.addUrlInput.value = '';
+        DOM.addTitleInput.value = '';
+        DOM.addCreatorInput.value = '';
+        DOM.resolveStatus.style.display = 'none';
+        DOM.resolvePreviewContainer.style.display = 'none';
+        DOM.resolvePreviewImg.src = '';
+      });
+    }
+
+    if (DOM.closeAddLinkModal) {
+      DOM.closeAddLinkModal.addEventListener('click', () => {
+        DOM.addLinkModal.classList.remove('active');
+      });
+    }
+
+    // Resolve URL button click
+    if (DOM.resolveUrlBtn) {
+      DOM.resolveUrlBtn.addEventListener('click', async () => {
+        const url = DOM.addUrlInput.value.trim();
+        if (!url) {
+          DOM.resolveStatus.style.display = 'block';
+          DOM.resolveStatus.style.color = '#ff4a5a';
+          DOM.resolveStatus.textContent = 'Vui lòng nhập liên kết trang web hoặc ảnh trước.';
+          return;
+        }
+
+        DOM.resolveStatus.style.display = 'block';
+        DOM.resolveStatus.style.color = 'var(--accent-cyan)';
+        DOM.resolveStatus.textContent = 'Đang tự động lấy dữ liệu ảnh...';
+        DOM.resolveUrlBtn.disabled = true;
+
+        try {
+          const response = await fetch('/api/resolve-link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+          });
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Không thể tự động trích xuất thông tin.');
+          }
+
+          const info = result.data;
+          DOM.addTitleInput.value = info.title || '';
+          DOM.addCreatorInput.value = info.creator || '';
+          DOM.resolvePreviewImg.src = info.image;
+          DOM.resolvePreviewContainer.style.display = 'block';
+
+          DOM.resolveStatus.style.color = '#39ff14'; // Neon Green
+          DOM.resolveStatus.textContent = 'Trích xuất ảnh thành công!';
+        } catch (err) {
+          console.error('Resolve URL failed:', err);
+          DOM.resolveStatus.style.color = '#ff007f'; // Neon Pink
+          DOM.resolveStatus.innerHTML = err.message;
+        } finally {
+          DOM.resolveUrlBtn.disabled = false;
+        }
+      });
+    }
+
+    // Save added Pin
+    if (DOM.saveAddBtn) {
+      DOM.saveAddBtn.addEventListener('click', () => {
+        const url = DOM.addUrlInput.value.trim();
+        const image = DOM.resolvePreviewImg.src || url;
+
+        if (!url) {
+          showNotification('Vui lòng điền liên kết nón!');
+          return;
+        }
+
+        // Create new hat item
+        const category = DOM.addCategorySelect.value;
+        const newHat = {
+          id: 'man-' + Date.now(),
+          title: DOM.addTitleInput.value.trim() || 'Nón liên kết',
+          image: image,
+          creator: DOM.addCreatorInput.value.trim() || 'Link trực tiếp',
+          category: category,
+          source: 'User Link',
+          url: url,
+          tags: [category, 'user-link', 'headwear']
+        };
+
+        // Add to state and save
+        state.manualHats.unshift(newHat);
+        localStorage.setItem('capinterest_manual_hats', JSON.stringify(state.manualHats));
+
+        DOM.addLinkModal.classList.remove('active');
+        showNotification('Đã thêm nón mới vào bản tin của bạn!');
+        
+        // Refresh grid
+        const query = state.searchQuery ? state.searchQuery : (state.selectedCategory === 'all' ? 'trendy caps' : state.selectedCategory + ' headwear');
+        fetchScrapedHats(query);
+      });
+    }
     
     // Close modals on clicking overlay background
     window.addEventListener('click', (e) => {
       if (e.target === DOM.detailModal) DOM.detailModal.classList.remove('active');
       if (e.target === DOM.settingsModal) DOM.settingsModal.classList.remove('active');
+      if (e.target === DOM.addLinkModal) DOM.addLinkModal.classList.remove('active');
     });
 
     // File input trigger
