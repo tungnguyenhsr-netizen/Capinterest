@@ -680,6 +680,167 @@ app.post('/api/user/settings', authMiddleware, (req, res) => {
   res.json({ success: true });
 });
 
+// ─── AI Design Chat Route ───────────────────────────────────────────────────
+
+// POST /api/design-chat — Trò chuyện thiết kế nón với AI Design Agent
+app.post('/api/design-chat', authMiddleware, async (req, res) => {
+  const { prompt, collection } = req.body || {};
+  const users = readDB('users');
+  const user = users.find(u => u.id === req.user.userId);
+  
+  let apiKey = user?.apiKey || process.env.GEMINI_API_KEY || '';
+  const aiMode = user?.aiMode || 'demo';
+  
+  if (!prompt) {
+    return res.status(400).json({ success: false, error: 'Vui lòng cung cấp ý tưởng thiết kế' });
+  }
+
+  // Format collection data as context
+  let collectionContext = 'Trống (chưa có nón yêu thích trong bộ sưu tập)';
+  if (Array.isArray(collection) && collection.length > 0) {
+    collectionContext = collection.map((item, idx) => 
+      `${idx + 1}. Tiêu đề: "${item.title || 'Nón'}" (Nhà sáng tạo: ${item.creator || 'Streetwear'}, Phân loại: ${item.category || 'Chung'})`
+    ).join('\n');
+  }
+
+  // If in demo mode or no API key, return mock response
+  if (aiMode === 'demo' || !apiKey) {
+    console.log('[Design Agent] No API key or Demo Mode active. Simulating concept.');
+    return simulateDesignResponse(res, prompt);
+  }
+
+  try {
+    console.log(`[Design Agent] Calling Gemini API for user: ${req.user.username}`);
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: `You are a professional fashion design AI specializing in headwear. You are acting as "Hat Design Agent", an interactive designer.
+                The user has a collection of liked hats:
+                ${collectionContext}
+                
+                The user's design idea or prompt is: "${prompt}".
+                
+                Help the user brainstorm and design a new hat concept based on their collection (as inspiration for their tastes) and their design idea.
+                Provide your response in Vietnamese in a beautifully structured markdown format:
+                
+                ### 🎩 Concept: [Concept Name]
+                
+                **Mô tả thiết kế:**
+                [Detailed visual, structural, and aesthetic description in Vietnamese]
+                
+                **Chất liệu đề xuất:**
+                - [Material 1]
+                - [Material 2]
+                
+                **Bảng màu chủ đạo:**
+                - Hex 1: #[HexCode]
+                - Hex 2: #[HexCode]
+                - Hex 3: #[HexCode]
+                
+                **Gợi ý phối đồ:**
+                [Stylist suggestions on how to wear this hat]
+                
+                **Prompt sinh ảnh AI (Midjourney/DALL-E):**
+                \`\`\`
+                [Detailed English prompt for image generation]
+                \`\`\`
+                
+                Keep the tone professional, creative, and enthusiastic. Ensure you respond in Vietnamese (except the English AI Image prompt).`
+              }
+            ]
+          }
+        ]
+      },
+      {
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+
+    const contentText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!contentText) {
+      throw new Error('Empty response from Gemini API');
+    }
+
+    res.json({ success: true, reply: contentText });
+
+  } catch (error) {
+    console.error('[Design Agent] Gemini API call failed:', error.response?.data || error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Gemini API call failed. Falling back to Demo Mode.',
+      reply: getMockDesignReply(prompt)
+    });
+  }
+});
+
+function getMockDesignReply(prompt) {
+  return `### 🎩 Concept: CyberNeon Cap-X
+
+**Mô tả thiết kế:**
+Mẫu thiết kế nón lưỡi trai lấy cảm hứng từ ý tưởng của bạn: "${prompt}" kết hợp với các bộ sưu tập trước đây của bạn. Phía trước được trang trí bằng một bảng điều khiển thêu 3D phát quang với họa tiết hình học, trong khi lưỡi trai có viền nhựa dẻo dạ quang. Đây là thiết kế nón mang hơi thở viễn tưởng cực cool.
+
+**Chất liệu đề xuất:**
+- Vải dệt công nghệ chống nước Ripstop Nylon siêu nhẹ.
+- Tấm nhựa dẻo dạ quang phát sáng nhẹ.
+- Khóa bấm kim loại mạ chrome phía sau.
+
+**Bảng màu chủ đạo:**
+- Hex 1: #00f0ff (Neon Cyan)
+- Hex 2: #1a1a1e (Matte Black)
+- Hex 3: #ff007f (Neon Pink)
+
+**Gợi ý phối đồ:**
+Phối nón này cùng với áo khoác bomber techwear màu đen oversized, quần túi hộp cargo và giày sneakers hầm hố có đế cao su trong suốt để tạo nên outfit chuẩn phong cách Streetwear tương lai.
+
+**Prompt sinh ảnh AI (Midjourney/DALL-E):**
+\`\`\`
+A futuristic cyberpunk cap with transparent glowing neon cyan accents, structured matte black techwear ripstop fabric, purple highlights, high-tech streetwear design, detailed texture, studio lighting, hyperrealistic, 8k --ar 1:1
+\`\`\`
+
+*(Lưu ý: Bạn nhận được câu trả lời này từ chế độ Demo vì chưa thiết lập hoặc lưu API Key Gemini)*`;
+}
+
+function simulateDesignResponse(res, prompt) {
+  setTimeout(() => {
+    res.json({
+      success: true,
+      reply: getMockDesignReply(prompt)
+    });
+  }, 1500);
+}
+
+// ─── Admin Database Backup & Restore Routes ─────────────────────────────────
+
+// GET /api/admin/backup — tải bản sao lưu của toàn bộ dữ liệu
+app.get('/api/admin/backup', authMiddleware, (req, res) => {
+  const users = readDB('users');
+  const collections = readDB('collections');
+  res.json({
+    success: true,
+    data: {
+      users,
+      collections
+    }
+  });
+});
+
+// POST /api/admin/restore — khôi phục dữ liệu từ bản sao lưu
+app.post('/api/admin/restore', authMiddleware, (req, res) => {
+  const { users, collections } = req.body || {};
+  if (!Array.isArray(users) || !Array.isArray(collections)) {
+    return res.status(400).json({ success: false, error: 'File sao lưu không hợp lệ' });
+  }
+
+  writeDB('users', users);
+  writeDB('collections', collections);
+  console.log(`[Backup/Restore] Database restored by user: ${req.user.username}`);
+  res.json({ success: true, message: 'Khôi phục dữ liệu hệ thống thành công!' });
+});
+
 // ─── Health check endpoint (dùng cho UptimeRobot để giữ server thức) ─────────
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

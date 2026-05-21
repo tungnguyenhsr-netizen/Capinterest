@@ -176,7 +176,28 @@ document.addEventListener('DOMContentLoaded', () => {
     migrationBanner: document.getElementById('migration-banner'),
     migrationCount: document.getElementById('migration-count'),
     migrationConfirmBtn: document.getElementById('migration-confirm-btn'),
-    migrationCancelBtn: document.getElementById('migration-cancel-btn')
+    migrationCancelBtn: document.getElementById('migration-cancel-btn'),
+
+    // Changelog
+    changelogBtn: document.getElementById('changelog-btn'),
+    mobileChangelogNavBtn: document.getElementById('mobile-changelog-nav-btn'),
+    changelogSection: document.getElementById('changelog-section'),
+
+    // Backup & Restore
+    dbBackupBtn: document.getElementById('db-backup-btn'),
+    dbRestoreTriggerBtn: document.getElementById('db-restore-trigger-btn'),
+    dbRestoreFileInput: document.getElementById('db-restore-file-input'),
+
+    // AI Design Agent Chat Tab Controls and Content
+    tabScannerBtn: document.getElementById('ailab-tab-scanner-btn'),
+    tabAgentBtn: document.getElementById('ailab-tab-agent-btn'),
+    scannerContent: document.getElementById('ailab-scanner-content'),
+    agentContent: document.getElementById('ailab-agent-content'),
+    agentChatMessages: document.getElementById('agent-chat-messages'),
+    agentChatInput: document.getElementById('agent-chat-input'),
+    agentSendBtn: document.getElementById('agent-send-btn'),
+    likedContextList: document.getElementById('liked-context-list'),
+    agentContextCount: document.getElementById('agent-context-count')
   };
 
   // API Request Helper
@@ -191,12 +212,291 @@ document.addEventListener('DOMContentLoaded', () => {
     if (body) {
       options.body = JSON.stringify(body);
     }
-    const res = await fetch(endpoint, options);
+    
+    let res = await fetch(endpoint, options);
+    
+    // Intercept 401/404 for auto-recovery if user was logged in
+    if (!res.ok && (res.status === 401 || res.status === 404) && localStorage.getItem('capinterest_recovery_username')) {
+      console.warn(`[API] Got ${res.status} error. Attempting silent recovery...`);
+      const recovered = await handleAccountAutoRecovery();
+      if (recovered) {
+        // Retry the API call with the new token
+        headers['Authorization'] = `Bearer ${state.auth.token}`;
+        res = await fetch(endpoint, options);
+      }
+    }
+    
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data.error || `HTTP error! status: ${res.status}`);
     }
     return data;
+  }
+
+  // Save credentials for auto-recovery
+  function saveRecoveryCredentials(username, password) {
+    try {
+      localStorage.setItem('capinterest_recovery_username', username);
+      localStorage.setItem('capinterest_recovery_password', btoa(password));
+    } catch (e) {
+      console.error('Failed to save recovery credentials', e);
+    }
+  }
+
+  // Clear credentials
+  function clearRecoveryCredentials() {
+    localStorage.removeItem('capinterest_recovery_username');
+    localStorage.removeItem('capinterest_recovery_password');
+  }
+
+  let isRecovering = false;
+  async function handleAccountAutoRecovery() {
+    if (isRecovering) return false;
+    const rUsername = localStorage.getItem('capinterest_recovery_username');
+    const rPasswordObfuscated = localStorage.getItem('capinterest_recovery_password');
+    if (!rUsername || !rPasswordObfuscated) return false;
+
+    isRecovering = true;
+    console.log('[Auto-Recovery] Attempting silent recovery for user:', rUsername);
+    let rPassword;
+    try {
+      rPassword = atob(rPasswordObfuscated);
+    } catch (e) {
+      isRecovering = false;
+      return false;
+    }
+
+    try {
+      // 1. Try to register
+      let res;
+      try {
+        res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: rUsername, password: rPassword })
+        }).then(r => r.json());
+      } catch (err) {
+        console.warn('[Auto-Recovery] Silent register failed, trying login...', err);
+      }
+
+      // 2. If register didn't yield success, try login
+      if (!res || !res.success) {
+        res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: rUsername, password: rPassword })
+        }).then(r => r.json());
+      }
+
+      if (res && res.success) {
+        console.log('[Auto-Recovery] Silent authentication successful!');
+        state.auth.token = res.token;
+        state.auth.username = res.username;
+        localStorage.setItem('capinterest_token', res.token);
+        localStorage.setItem('capinterest_username', res.username);
+        updateAuthUI();
+
+        // 3. Restore User Settings (API Key & Mode)
+        const savedMode = localStorage.getItem('capinterest_mode') || 'demo';
+        const savedKey = localStorage.getItem('capinterest_apikey') || '';
+        try {
+          await fetch('/api/user/settings', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${res.token}`
+            },
+            body: JSON.stringify({ aiMode: savedMode, apiKey: savedKey })
+          });
+        } catch (settingsErr) {
+          console.error('[Auto-Recovery] Failed to restore settings:', settingsErr);
+        }
+
+        // 4. Restore collections backup mirror
+        const usernameLower = rUsername.toLowerCase();
+        const backupKey = 'capinterest_backup_likes_' + usernameLower;
+        const backupLikes = JSON.parse(localStorage.getItem(backupKey) || '[]');
+        if (backupLikes.length > 0) {
+          try {
+            await fetch('/api/collection/migrate', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${res.token}`
+              },
+              body: JSON.stringify({ items: backupLikes })
+            });
+            console.log(`[Auto-Recovery] Restored ${backupLikes.length} collection items.`);
+          } catch (migrateErr) {
+            console.error('[Auto-Recovery] Failed to restore collection:', migrateErr);
+          }
+        }
+
+        showNotification('Đã tự động khôi phục tài khoản và đồng bộ dữ liệu!');
+        isRecovering = false;
+        return true;
+      }
+    } catch (recoveryErr) {
+      console.error('[Auto-Recovery] Critical failure during recovery:', recoveryErr);
+    }
+
+    isRecovering = false;
+    return false;
+  }
+
+  let pollingInterval = null;
+
+  function startCollectionPolling() {
+    if (pollingInterval) clearInterval(pollingInterval);
+    // Poll immediately, then every 8s
+    pollCollection();
+    pollingInterval = setInterval(pollCollection, 8000);
+  }
+
+  function stopCollectionPolling() {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      pollingInterval = null;
+    }
+  }
+
+  async function pollCollection() {
+    if (!state.auth.token) {
+      stopCollectionPolling();
+      return;
+    }
+    try {
+      const res = await apiCall('/api/collection');
+      if (res.success) {
+        const newItemsObjects = res.data || [];
+        const newIds = newItemsObjects.map(item => item.id || item.image);
+        
+        // Compare with local cache
+        const cacheIds = state.likedItems;
+        const hasChanges = newIds.length !== cacheIds.length || 
+                           newIds.some((id, idx) => id !== cacheIds[idx]);
+                           
+        if (hasChanges) {
+          console.log('[Sync] Collection changes detected via polling. Updating...');
+          state.likedItemsObjects = newItemsObjects;
+          state.likedItems = newIds;
+          
+          // Sync backup mirror
+          if (state.auth.username) {
+            const usernameLower = state.auth.username.toLowerCase();
+            const backupKey = 'capinterest_backup_likes_' + usernameLower;
+            localStorage.setItem(backupKey, JSON.stringify(state.likedItemsObjects));
+          }
+          
+          updateCollectionBadge();
+          updateLikeButtonsUI();
+          
+          if (state.currentTab === 'collection') {
+            renderCollection();
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[Sync] Collection polling error:', err);
+    }
+  }
+
+  function updateLikeButtonsUI() {
+    const likeButtons = document.querySelectorAll('.like-btn');
+    likeButtons.forEach(btn => {
+      const id = btn.getAttribute('data-id');
+      const isLiked = state.likedItems.includes(id);
+      if (isLiked) {
+        btn.classList.add('liked');
+      } else {
+        btn.classList.remove('liked');
+      }
+    });
+  }
+
+  function formatMarkdownToHtml(text) {
+    if (!text) return '';
+    let html = text;
+
+    // Escaped HTML tags to prevent XSS
+    html = html
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // Code blocks: ```[lang]\n[code]\n```
+    html = html.replace(/```(?:[a-zA-Z0-9]+)?\n([\s\S]*?)\n```/g, '<pre><code>$1</code></pre>');
+    
+    // Inline code: `code`
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Headers: ### text
+    html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+
+    // Bold: **text**
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+    // Bullet points: - text or * text
+    html = html.replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>');
+    
+    // Group adjacent <li> tags into <ul> tags
+    html = html.replace(/(?:<li>.*<\/li>\s*)+/g, (match) => `<ul>${match}</ul>`);
+
+    // Line breaks
+    html = html.replace(/\n\n/g, '<p></p>');
+    html = html.replace(/\n/g, '<br>');
+    html = html.replace(/<p><\/p>/g, '<br><br>');
+
+    return html;
+  }
+
+  function renderChatContext() {
+    if (!DOM.likedContextList) return;
+
+    const count = state.likedItemsObjects.length;
+    if (DOM.agentContextCount) {
+      DOM.agentContextCount.textContent = `${count} nón`;
+    }
+
+    DOM.likedContextList.innerHTML = '';
+    if (count === 0) {
+      DOM.likedContextList.innerHTML = `
+        <div style="text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.9rem;">
+          Chưa có nón yêu thích. Hãy "Thích" nón trên Bản tin để làm dữ liệu thiết kế!
+        </div>
+      `;
+      return;
+    }
+
+    state.likedItemsObjects.forEach(item => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'context-item';
+      itemEl.innerHTML = `
+        <img src="${item.image}" alt="${item.title}" class="context-img">
+        <div class="context-info">
+          <div class="context-title" title="${item.title}">${item.title}</div>
+          <div class="context-creator">@${item.creator || 'streetwear'}</div>
+        </div>
+      `;
+      DOM.likedContextList.appendChild(itemEl);
+    });
+  }
+
+  function appendChatMessage(sender, contentHtml) {
+    if (!DOM.agentChatMessages) return;
+
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${sender === 'user' ? 'user-msg' : 'agent-msg'}`;
+    msgDiv.innerHTML = `
+      <div class="msg-bubble">
+        ${contentHtml}
+      </div>
+    `;
+
+    DOM.agentChatMessages.appendChild(msgDiv);
+    DOM.agentChatMessages.scrollTop = DOM.agentChatMessages.scrollHeight;
   }
 
   // Update Auth Badge in Header
@@ -250,10 +550,11 @@ document.addEventListener('DOMContentLoaded', () => {
           state.likedItemsObjects = res.data || [];
           state.likedItems = (res.data || []).map(item => item.id || item.image);
           updateCollectionBadge();
+          updateLikeButtonsUI();
           if (state.currentTab === 'collection') {
             renderCollection();
           }
-
+ 
           // Back up mirror logic
           if (state.auth.username) {
             const usernameLower = state.auth.username.toLowerCase();
@@ -271,6 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.likedItemsObjects = freshRes.data || [];
                     state.likedItems = (freshRes.data || []).map(item => item.id || item.image);
                     updateCollectionBadge();
+                    updateLikeButtonsUI();
                     if (state.currentTab === 'collection') {
                       renderCollection();
                     }
@@ -293,6 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
       state.likedItems = JSON.parse(localStorage.getItem('capinterest_likes') || '[]');
       state.likedItemsObjects = JSON.parse(localStorage.getItem('capinterest_likes_objects') || '[]');
       updateCollectionBadge();
+      updateLikeButtonsUI();
       if (state.currentTab === 'collection') {
         renderCollection();
       }
@@ -332,6 +635,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Load and sync collection
     await syncCollection();
+    
+    // Start polling collection if authenticated
+    if (state.auth.token) {
+      startCollectionPolling();
+    }
     
     // Check migration
     checkMigrationAfterLogin();
@@ -724,6 +1032,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     updateCollectionBadge();
+    updateLikeButtonsUI();
     
     if (state.currentTab === 'collection') {
       renderCollection();
@@ -1021,6 +1330,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     DOM.collectionNavBtn.addEventListener('click', () => switchTab('collection'));
     DOM.ailabNavBtn.addEventListener('click', () => switchTab('ailab'));
+    if (DOM.changelogBtn) {
+      DOM.changelogBtn.addEventListener('click', () => switchTab('changelog'));
+    }
 
     // Mobile Navigation Tabs
     if (DOM.mobileFeedNavBtn) {
@@ -1039,6 +1351,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (DOM.mobileAilabNavBtn) {
       DOM.mobileAilabNavBtn.addEventListener('click', () => switchTab('ailab'));
+    }
+    if (DOM.mobileChangelogNavBtn) {
+      DOM.mobileChangelogNavBtn.addEventListener('click', () => switchTab('changelog'));
     }
     if (DOM.mobileAddLinkBtn && DOM.addLinkBtn) {
       DOM.mobileAddLinkBtn.addEventListener('click', () => DOM.addLinkBtn.click());
@@ -1129,12 +1444,14 @@ document.addEventListener('DOMContentLoaded', () => {
             state.auth.username = res.username;
             localStorage.setItem('capinterest_token', res.token);
             localStorage.setItem('capinterest_username', res.username);
+            saveRecoveryCredentials(username, password);
             
             DOM.authModal.classList.remove('active');
             
             updateAuthUI();
             await syncUserSettings();
             await syncCollection();
+            startCollectionPolling();
             checkMigrationAfterLogin();
             showNotification(`Chào mừng quay trở lại, @${res.username}!`);
           }
@@ -1175,12 +1492,14 @@ document.addEventListener('DOMContentLoaded', () => {
             state.auth.username = res.username;
             localStorage.setItem('capinterest_token', res.token);
             localStorage.setItem('capinterest_username', res.username);
+            saveRecoveryCredentials(username, password);
             
             DOM.authModal.classList.remove('active');
             
             updateAuthUI();
             await syncUserSettings();
             await syncCollection();
+            startCollectionPolling();
             checkMigrationAfterLogin();
             showNotification(`Đăng ký tài khoản thành công!`);
           }
@@ -1203,6 +1522,7 @@ document.addEventListener('DOMContentLoaded', () => {
           state.auth.username = null;
           localStorage.removeItem('capinterest_token');
           localStorage.removeItem('capinterest_username');
+          clearRecoveryCredentials();
           
           // Reset settings to Guest default
           localStorage.setItem('capinterest_mode', 'demo');
@@ -1210,6 +1530,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loadSettings();
           
           updateAuthUI();
+          stopCollectionPolling();
           syncCollection();
           
           DOM.migrationBanner.style.display = 'none';
@@ -1337,6 +1658,158 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     DOM.saveSettingsBtn.addEventListener('click', saveSettings);
+
+    // Backup & Restore listeners
+    if (DOM.dbBackupBtn) {
+      DOM.dbBackupBtn.addEventListener('click', async () => {
+        if (!state.auth.token) {
+          showNotification('Bạn cần đăng nhập để sao lưu hệ thống!');
+          return;
+        }
+        try {
+          DOM.dbBackupBtn.disabled = true;
+          const originalText = DOM.dbBackupBtn.innerHTML;
+          DOM.dbBackupBtn.innerHTML = 'Đang tải...';
+          const res = await apiCall('/api/admin/backup');
+          if (res.success) {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(res.data, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `capinterest_backup_${new Date().toISOString().slice(0, 10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showNotification('Đã tải xuống tệp sao lưu dữ liệu!');
+          }
+          DOM.dbBackupBtn.innerHTML = originalText;
+        } catch (err) {
+          console.error(err);
+          showNotification('Lỗi khi tải bản sao lưu: ' + err.message);
+        } finally {
+          DOM.dbBackupBtn.disabled = false;
+        }
+      });
+    }
+
+    if (DOM.dbRestoreTriggerBtn && DOM.dbRestoreFileInput) {
+      DOM.dbRestoreTriggerBtn.addEventListener('click', () => {
+        if (!state.auth.token) {
+          showNotification('Bạn cần đăng nhập để phục hồi hệ thống!');
+          return;
+        }
+        DOM.dbRestoreFileInput.click();
+      });
+
+      DOM.dbRestoreFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+          try {
+            const data = JSON.parse(evt.target.result);
+            if (!data.users || !data.collections) {
+              showNotification('Tệp sao lưu không hợp lệ! Thiếu users hoặc collections.');
+              return;
+            }
+
+            DOM.dbRestoreTriggerBtn.disabled = true;
+            const originalText = DOM.dbRestoreTriggerBtn.innerHTML;
+            DOM.dbRestoreTriggerBtn.innerHTML = 'Đang khôi phục...';
+
+            const res = await apiCall('/api/admin/restore', 'POST', data);
+            if (res.success) {
+              showNotification('Khôi phục dữ liệu hệ thống thành công! Đang đồng bộ lại...');
+              await syncUserSettings();
+              await syncCollection();
+              fetchScrapedHats('trendy caps');
+              DOM.settingsModal.classList.remove('active');
+            }
+            DOM.dbRestoreTriggerBtn.innerHTML = originalText;
+          } catch (err) {
+            console.error(err);
+            showNotification('Khôi phục thất bại: ' + err.message);
+          } finally {
+            DOM.dbRestoreTriggerBtn.disabled = false;
+            DOM.dbRestoreFileInput.value = '';
+          }
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    // AI Lab Sub-Tab Toggles
+    if (DOM.tabScannerBtn && DOM.tabAgentBtn && DOM.scannerContent && DOM.agentContent) {
+      DOM.tabScannerBtn.addEventListener('click', () => {
+        DOM.tabScannerBtn.classList.add('active');
+        DOM.tabAgentBtn.classList.remove('active');
+        DOM.scannerContent.classList.add('active');
+        DOM.agentContent.classList.remove('active');
+      });
+
+      DOM.tabAgentBtn.addEventListener('click', () => {
+        DOM.tabAgentBtn.classList.add('active');
+        DOM.tabScannerBtn.classList.remove('active');
+        DOM.agentContent.classList.add('active');
+        DOM.scannerContent.classList.remove('active');
+        renderChatContext();
+      });
+    }
+
+    // AI Design Agent Chat Messages
+    if (DOM.agentChatInput && DOM.agentSendBtn && DOM.agentChatMessages) {
+      const sendMessage = async () => {
+        const promptText = DOM.agentChatInput.value.trim();
+        if (!promptText) return;
+
+        appendChatMessage('user', promptText);
+        DOM.agentChatInput.value = '';
+        DOM.agentChatInput.style.height = 'auto';
+
+        const loadingId = 'loading-' + Date.now();
+        appendChatMessage('agent', `
+          <div class="loading-dots" id="${loadingId}">
+            <span></span><span></span><span></span>
+          </div>
+        `);
+
+        try {
+          const res = await apiCall('/api/design-chat', 'POST', {
+            prompt: promptText,
+            collection: state.likedItemsObjects
+          });
+
+          const loadingEl = document.getElementById(loadingId);
+          if (loadingEl) {
+            const bubbleEl = loadingEl.closest('.msg-bubble');
+            if (bubbleEl) {
+              bubbleEl.innerHTML = formatMarkdownToHtml(res.reply);
+            }
+          } else {
+            appendChatMessage('agent', formatMarkdownToHtml(res.reply));
+          }
+        } catch (err) {
+          console.error(err);
+          const loadingEl = document.getElementById(loadingId);
+          if (loadingEl) {
+            const bubbleEl = loadingEl.closest('.msg-bubble');
+            if (bubbleEl) {
+              bubbleEl.innerHTML = `<span style="color:var(--accent-pink);">Lỗi: ${err.message}</span>`;
+            }
+          } else {
+            appendChatMessage('agent', `<span style="color:var(--accent-pink);">Lỗi: Lỗi khi xử lý ý tưởng thiết kế.</span>`);
+          }
+        }
+      };
+
+      DOM.agentSendBtn.addEventListener('click', sendMessage);
+      DOM.agentChatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+    }
 
     // Detail Modal Close
     DOM.closeDetailModal.addEventListener('click', () => {
