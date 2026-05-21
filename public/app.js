@@ -150,6 +150,14 @@ document.addEventListener('DOMContentLoaded', () => {
     collectionEmpty: document.getElementById('collection-empty'),
     clearCollectionBtn: document.getElementById('clear-collection-btn'),
 
+    // Mobile Navigation & Badge
+    mobileNavBar: document.getElementById('mobile-nav-bar'),
+    mobileFeedNavBtn: document.getElementById('mobile-feed-nav-btn'),
+    mobileCollectionNavBtn: document.getElementById('mobile-collection-nav-btn'),
+    mobileAilabNavBtn: document.getElementById('mobile-ailab-nav-btn'),
+    mobileAddLinkBtn: document.getElementById('mobile-add-link-btn'),
+    mobileCollectionBadge: document.getElementById('mobile-collection-badge'),
+
     // Auth Modal & Badge
     authModal: document.getElementById('auth-modal'),
     closeAuthModal: document.getElementById('close-auth-modal'),
@@ -309,6 +317,11 @@ document.addEventListener('DOMContentLoaded', () => {
     DOM.feedNavBtn.classList.remove('active');
     DOM.collectionNavBtn.classList.remove('active');
     DOM.ailabNavBtn.classList.remove('active');
+    
+    if (DOM.mobileFeedNavBtn) DOM.mobileFeedNavBtn.classList.remove('active');
+    if (DOM.mobileCollectionNavBtn) DOM.mobileCollectionNavBtn.classList.remove('active');
+    if (DOM.mobileAilabNavBtn) DOM.mobileAilabNavBtn.classList.remove('active');
+
     DOM.feedSection.classList.remove('active');
     DOM.collectionSection.classList.remove('active');
     DOM.ailabSection.classList.remove('active');
@@ -318,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (tabName === 'feed') {
       DOM.feedNavBtn.classList.add('active');
+      if (DOM.mobileFeedNavBtn) DOM.mobileFeedNavBtn.classList.add('active');
       DOM.feedSection.classList.add('active');
       
       // If we switched to feed from another tab, refresh
@@ -331,11 +345,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } else if (tabName === 'collection') {
       DOM.collectionNavBtn.classList.add('active');
+      if (DOM.mobileCollectionNavBtn) DOM.mobileCollectionNavBtn.classList.add('active');
       DOM.collectionSection.classList.add('active');
       renderCollection();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (tabName === 'ailab') {
       DOM.ailabNavBtn.classList.add('active');
+      if (DOM.mobileAilabNavBtn) DOM.mobileAilabNavBtn.classList.add('active');
       DOM.ailabSection.classList.add('active');
       
       // Auto-initialize analyzer elements
@@ -648,6 +664,14 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.collectionBadge.style.display = 'none';
       }
     }
+    if (DOM.mobileCollectionBadge) {
+      if (count > 0) {
+        DOM.mobileCollectionBadge.textContent = count > 99 ? '99+' : count;
+        DOM.mobileCollectionBadge.style.display = 'inline-flex';
+      } else {
+        DOM.mobileCollectionBadge.style.display = 'none';
+      }
+    }
   }
 
   function renderCollection() {
@@ -924,6 +948,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     DOM.collectionNavBtn.addEventListener('click', () => switchTab('collection'));
     DOM.ailabNavBtn.addEventListener('click', () => switchTab('ailab'));
+
+    // Mobile Navigation Tabs
+    if (DOM.mobileFeedNavBtn) {
+      DOM.mobileFeedNavBtn.addEventListener('click', () => {
+        if (state.currentTab === 'feed') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          const query = getActiveQuery(true);
+          fetchScrapedHats(query);
+        } else {
+          switchTab('feed');
+        }
+      });
+    }
+    if (DOM.mobileCollectionNavBtn) {
+      DOM.mobileCollectionNavBtn.addEventListener('click', () => switchTab('collection'));
+    }
+    if (DOM.mobileAilabNavBtn) {
+      DOM.mobileAilabNavBtn.addEventListener('click', () => switchTab('ailab'));
+    }
+    if (DOM.mobileAddLinkBtn && DOM.addLinkBtn) {
+      DOM.mobileAddLinkBtn.addEventListener('click', () => DOM.addLinkBtn.click());
+    }
 
     // Clear all collection
     DOM.clearCollectionBtn.addEventListener('click', async () => {

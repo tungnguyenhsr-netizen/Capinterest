@@ -328,21 +328,74 @@ body {
   .masonry-grid { column-count: 4; }
 }
 
+@media (max-width: 1200px) {
+  /* Compact Header Actions (Icons only) */
+  .nav-btn {
+    font-size: 0 !important;
+    padding: 10px 12px;
+    gap: 0;
+  }
+  .nav-btn svg {
+    margin-right: 0;
+  }
+  .collection-badge {
+    margin-left: 2px;
+  }
+  #user-username {
+    display: none;
+  }
+  .user-profile-btn {
+    padding: 8px 10px;
+    gap: 0;
+  }
+  .logout-icon-btn {
+    margin-left: 6px;
+  }
+}
+
 @media (max-width: 1100px) {
   .masonry-grid { column-count: 3; }
 }
 
 @media (max-width: 768px) {
   .masonry-grid { column-count: 2; }
-  .main-header { padding: 16px 20px; }
-  .category-bar { padding: 10px 20px; }
-  .main-content { padding: 10px 20px 20px 20px; }
-  .search-container { width: 100%; order: 3; margin-top: 10px; }
+  .main-header { padding: 12px 16px; }
+  .category-bar { padding: 10px 16px; }
+  .main-content { padding: 10px 16px 20px 16px; }
+  .search-container { width: 100%; order: 3; margin-top: 12px; }
   .main-header { flex-wrap: wrap; }
+  
+  /* Hide Desktop navigation actions on Mobile */
+  #feed-nav-btn,
+  #collection-nav-btn,
+  #ailab-nav-btn,
+  #add-link-btn {
+    display: none !important;
+  }
+  
+  /* Give space at the bottom for Mobile Nav Bar */
+  .app-container {
+    padding-bottom: 80px;
+  }
 }
 
 @media (max-width: 480px) {
-  .masonry-grid { column-count: 1; }
+  .masonry-grid { 
+    column-count: 2; 
+    column-gap: 12px; 
+  }
+  .cap-card {
+    margin-bottom: 12px;
+  }
+  .card-info {
+    padding: 10px;
+  }
+  .card-info h3 {
+    font-size: 13px;
+  }
+  .card-info p {
+    font-size: 11px;
+  }
 }
 
 /* Card design */
@@ -1467,11 +1520,102 @@ body {
   min-height: 36px;
 }
 
-@media (max-width: 576px) {
+@media (max-width: 768px) {
+  /* Position Migration Banner above mobile bottom bar */
   .migration-banner {
-    bottom: 20px;
+    bottom: 80px !important;
     right: 20px;
     left: 20px;
     width: auto;
   }
+  
+  /* Reduce modal padding on mobile */
+  .modal-info-col {
+    padding: 24px 20px;
+  }
+  
+  .modal-image-col {
+    min-height: 250px;
+  }
+}
+
+@media (max-width: 576px) {
+  .migration-banner {
+    bottom: 80px !important;
+    right: 16px;
+    left: 16px;
+  }
+}
+
+/* ============================================
+   Mobile Bottom Navigation Bar Styles
+   ============================================ */
+.mobile-nav-bar {
+  display: none; /* Hidden on desktop */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(13, 20, 35, 0.85); /* Matches var(--bg-modal) and glassmorphism */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-light);
+  z-index: 999;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 10px;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 768px) {
+  .mobile-nav-bar {
+    display: flex;
+  }
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font-main);
+  padding: 8px 12px;
+  border-radius: 12px;
+  transition: var(--transition-smooth);
+  position: relative;
+  flex: 1;
+  max-width: 90px;
+}
+
+.mobile-nav-item svg {
+  transition: var(--transition-smooth);
+  color: var(--text-secondary);
+}
+
+.mobile-nav-item:hover svg,
+.mobile-nav-item.active svg {
+  color: var(--accent-cyan);
+}
+
+.mobile-nav-item.active {
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.mobile-nav-item .collection-badge {
+  position: absolute;
+  top: 4px;
+  right: 18px;
+  margin-left: 0;
+  transform: scale(0.85);
+  z-index: 2;
 }
