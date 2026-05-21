@@ -390,7 +390,31 @@ app.post('/api/resolve-link', async (req, res) => {
 // AI Analyze Endpoint (Proxy for Gemini API)
 app.post('/api/analyze', async (req, res) => {
   const { image, apiKey: clientApiKey } = req.body;
-  const apiKey = clientApiKey || process.env.GEMINI_API_KEY;
+  let apiKey = clientApiKey;
+
+  // Try to load apiKey from user account if they are logged in
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded && decoded.userId) {
+        const users = readDB('users');
+        const user = users.find(u => u.id === decoded.userId);
+        if (user && user.apiKey) {
+          apiKey = user.apiKey;
+          console.log(`[AI Analyze] Using saved API key for user: ${user.username}`);
+        }
+      }
+    } catch (err) {
+      console.warn('[AI Analyze] Optional auth token verification failed:', err.message);
+    }
+  }
+
+  // Fallback to process.env if still not set
+  if (!apiKey) {
+    apiKey = process.env.GEMINI_API_KEY;
+  }
 
   if (!image) {
     return res.status(400).json({ success: false, error: 'No image provided' });
@@ -529,7 +553,14 @@ app.post('/api/auth/register', async (req, res) => {
     return res.status(409).json({ success: false, error: 'Tên đăng nhập đã tồn tại' });
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = { id: Date.now().toString(), username, passwordHash, createdAt: new Date().toISOString() };
+  const user = {
+    id: Date.now().toString(),
+    username,
+    passwordHash,
+    aiMode: 'demo',
+    apiKey: '',
+    createdAt: new Date().toISOString()
+  };
   users.push(user);
   writeDB('users', users);
 
@@ -614,6 +645,39 @@ app.post('/api/collection/migrate', authMiddleware, (req, res) => {
   writeDB('collections', all);
   console.log(`[Migrate] User ${req.user.username} migrated ${addedCount} items`);
   res.json({ success: true, added: addedCount });
+});
+
+// ─── User Settings Routes ───────────────────────────────────────────────────
+
+// GET /api/user/settings — lấy cấu hình AI của user
+app.get('/api/user/settings', authMiddleware, (req, res) => {
+  const users = readDB('users');
+  const user = users.find(u => u.id === req.user.userId);
+  if (!user) {
+    return res.status(404).json({ success: false, error: 'Không tìm thấy người dùng' });
+  }
+  res.json({
+    success: true,
+    aiMode: user.aiMode || 'demo',
+    apiKey: user.apiKey || ''
+  });
+});
+
+// POST /api/user/settings — cập nhật cấu hình AI của user
+app.post('/api/user/settings', authMiddleware, (req, res) => {
+  const { aiMode, apiKey } = req.body || {};
+  const users = readDB('users');
+  const userIndex = users.findIndex(u => u.id === req.user.userId);
+  if (userIndex === -1) {
+    return res.status(404).json({ success: false, error: 'Không tìm thấy người dùng' });
+  }
+  
+  users[userIndex].aiMode = aiMode || 'demo';
+  users[userIndex].apiKey = apiKey || '';
+  
+  writeDB('users', users);
+  console.log(`[Settings] User ${users[userIndex].username} updated AI settings.`);
+  res.json({ success: true });
 });
 
 // ─── Health check endpoint (dùng cho UptimeRobot để giữ server thức) ─────────

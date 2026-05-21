@@ -212,6 +212,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Sync user settings (AI mode and API key)
+  async function syncUserSettings() {
+    if (state.auth.token) {
+      try {
+        const res = await apiCall('/api/user/settings');
+        if (res.success) {
+          const localMode = localStorage.getItem('capinterest_mode') || 'demo';
+          const localKey = localStorage.getItem('capinterest_apikey') || '';
+          
+          const serverMode = res.aiMode || 'demo';
+          const serverKey = res.apiKey || '';
+          
+          if (!serverKey && localKey) {
+            // Local key exists but server key doesn't: sync local key to server!
+            console.log('[Settings] Syncing local API key to server...');
+            await apiCall('/api/user/settings', 'POST', { aiMode: localMode, apiKey: localKey });
+          } else {
+            // Server key exists (or both empty/set): sync server key to local
+            localStorage.setItem('capinterest_mode', serverMode);
+            localStorage.setItem('capinterest_apikey', serverKey);
+          }
+          loadSettings();
+        }
+      } catch (err) {
+        console.error('Failed to sync user settings:', err);
+      }
+    }
+  }
+
   // Sync collection (server vs local guest)
   async function syncCollection() {
     if (state.auth.token) {
@@ -223,6 +252,37 @@ document.addEventListener('DOMContentLoaded', () => {
           updateCollectionBadge();
           if (state.currentTab === 'collection') {
             renderCollection();
+          }
+
+          // Back up mirror logic
+          if (state.auth.username) {
+            const usernameLower = state.auth.username.toLowerCase();
+            const backupKey = 'capinterest_backup_likes_' + usernameLower;
+            const backupLikes = JSON.parse(localStorage.getItem(backupKey) || '[]');
+            
+            if (state.likedItemsObjects.length === 0 && backupLikes.length > 0) {
+              console.log(`[Backup] Server collection is empty, but found client-side backup of ${backupLikes.length} items for ${usernameLower}. Auto-restoring...`);
+              try {
+                const migrateRes = await apiCall('/api/collection/migrate', 'POST', { items: backupLikes });
+                if (migrateRes.success) {
+                  showNotification(`Đã tự động khôi phục ${migrateRes.added} nón yêu thích từ bản sao lưu máy khách!`);
+                  const freshRes = await apiCall('/api/collection');
+                  if (freshRes.success) {
+                    state.likedItemsObjects = freshRes.data || [];
+                    state.likedItems = (freshRes.data || []).map(item => item.id || item.image);
+                    updateCollectionBadge();
+                    if (state.currentTab === 'collection') {
+                      renderCollection();
+                    }
+                  }
+                }
+              } catch (migrateErr) {
+                console.error('[Backup] Failed to auto-restore collection:', migrateErr);
+              }
+            } else {
+              // Store current collection to backup mirror
+              localStorage.setItem(backupKey, JSON.stringify(state.likedItemsObjects));
+            }
           }
         }
       } catch (err) {
@@ -266,6 +326,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Set initial Auth UI state
     updateAuthUI();
+    
+    // Sync settings
+    await syncUserSettings();
     
     // Load and sync collection
     await syncCollection();
@@ -374,12 +437,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function saveSettings() {
+  async function saveSettings() {
     const mode = DOM.settingsMode.value;
     const key = DOM.apikeyInput.value.trim();
     
     localStorage.setItem('capinterest_mode', mode);
     localStorage.setItem('capinterest_apikey', key);
+    
+    if (state.auth.token) {
+      try {
+        DOM.saveSettingsBtn.disabled = true;
+        DOM.saveSettingsBtn.textContent = 'Đang lưu...';
+        await apiCall('/api/user/settings', 'POST', { aiMode: mode, apiKey: key });
+      } catch (err) {
+        console.error('Lỗi khi lưu cấu hình lên tài khoản:', err);
+        showNotification('Lỗi khi lưu cấu hình lên tài khoản. Cấu hình đã được lưu tạm trên máy này.');
+      } finally {
+        DOM.saveSettingsBtn.disabled = false;
+        DOM.saveSettingsBtn.textContent = 'Lưu cấu hình';
+      }
+    }
     
     DOM.settingsModal.classList.remove('active');
     
@@ -548,12 +625,8 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const card = document.createElement('div');
       card.className = 'cap-card';
-      // Vary aspect ratios a bit to look like Pinterest (using index logic)
-      const mockIndex = currentCardCount + index;
-      const mockHeight = mockIndex % 3 === 0 ? '300px' : (mockIndex % 3 === 1 ? '220px' : '260px');
-      
       card.innerHTML = `
-        <img src="${item.image}" alt="${item.title}" loading="lazy" style="min-height: ${mockHeight}">
+        <img src="${item.image}" alt="${item.title}" loading="lazy">
         <div class="cap-card-overlay">
           <div class="overlay-top">
             <button class="like-btn ${isLiked ? 'liked' : ''}" data-id="${item.id || item.image}">
@@ -631,6 +704,9 @@ document.addEventListener('DOMContentLoaded', () => {
           btnElement.disabled = false;
         }
       }
+      if (state.auth.username) {
+        localStorage.setItem('capinterest_backup_likes_' + state.auth.username.toLowerCase(), JSON.stringify(state.likedItemsObjects));
+      }
     } else {
       if (idx > -1) {
         state.likedItems.splice(idx, 1);
@@ -698,11 +774,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'cap-card';
       
-      // Vary aspect ratios like Pinterest feed
-      const mockHeight = index % 3 === 0 ? '300px' : (index % 3 === 1 ? '220px' : '260px');
-      
       card.innerHTML = `
-        <img src="${item.image}" alt="${item.title}" loading="lazy" style="min-height: ${mockHeight}" onerror="this.parentElement.remove();">
+        <img src="${item.image}" alt="${item.title}" loading="lazy" onerror="this.parentElement.remove();">
         <div class="cap-card-overlay">
           <div class="overlay-top">
             <button class="like-btn liked" data-id="${item.id || item.image}" title="Bỏ lưu">
@@ -1060,6 +1133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.authModal.classList.remove('active');
             
             updateAuthUI();
+            await syncUserSettings();
             await syncCollection();
             checkMigrationAfterLogin();
             showNotification(`Chào mừng quay trở lại, @${res.username}!`);
@@ -1105,6 +1179,7 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.authModal.classList.remove('active');
             
             updateAuthUI();
+            await syncUserSettings();
             await syncCollection();
             checkMigrationAfterLogin();
             showNotification(`Đăng ký tài khoản thành công!`);
@@ -1128,6 +1203,11 @@ document.addEventListener('DOMContentLoaded', () => {
           state.auth.username = null;
           localStorage.removeItem('capinterest_token');
           localStorage.removeItem('capinterest_username');
+          
+          // Reset settings to Guest default
+          localStorage.setItem('capinterest_mode', 'demo');
+          localStorage.setItem('capinterest_apikey', '');
+          loadSettings();
           
           updateAuthUI();
           syncCollection();
