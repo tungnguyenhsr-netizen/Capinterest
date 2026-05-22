@@ -345,6 +345,20 @@
         <div class="timeline-container">
           <div class="timeline-line"></div>
           
+          <!-- Node v1.5.2 -->
+          <div class="timeline-item">
+            <div class="timeline-badge v152-badge" style="background: var(--accent-pink); box-shadow: 0 0 10px var(--accent-pink);">v1.5.2</div>
+            <div class="timeline-card">
+              <span class="timeline-date">22 Tháng 5, 2026</span>
+              <h3>⚙️ Đồng Nhất Cấu Hình Google AI Studio (Bỏ Chế Độ Demo)</h3>
+              <ul class="timeline-list">
+                <li><span class="highlight-pink">Bỏ Hoàn Toàn Demo Mode:</span> Gỡ bỏ toàn bộ code sinh dữ liệu giả lập (mock response) trên Backend. Khi cấu hình sai hoặc thiếu API Key, hệ thống sẽ trả trực tiếp thông tin lỗi chi tiết về giao diện người dùng.</li>
+                <li><span class="highlight-pink">Giao Diện Settings Tinh Gọn:</span> Ẩn menu chọn chế độ AI Mode, mặc định chuyển toàn bộ hệ thống sang sử dụng Google AI Studio (Gemini API) với API Key của người dùng.</li>
+                <li><span class="highlight-pink">Tự Động Di Trú (Auto-Migration):</span> Hệ thống tự động chuyển đổi cấu hình cũ từ 'demo' sang 'gemini' trên máy khách để tránh các lỗi không tương thích.</li>
+              </ul>
+            </div>
+          </div>
+
           <!-- Node v1.5.1 -->
           <div class="timeline-item">
             <div class="timeline-badge v150-badge">v1.5.1</div>
@@ -479,20 +493,17 @@
     <div class="modal-card settings-card">
       <button class="close-modal" id="close-settings-modal">&times;</button>
       <h2>Cài Đặt Cấu Hình AI</h2>
-      <p class="subtitle">Kết nối với API thật để có kết quả phân tích nón chính xác từ hình ảnh của bạn</p>
+      <p class="subtitle">Nhập API Key lấy từ Google AI Studio để phân tích nón bằng AI (gemini-3.5-flash)</p>
       
-      <div class="form-group">
-        <label for="settings-mode">Chế độ hoạt động</label>
-        <select id="settings-mode">
-          <option value="demo">Demo Mode (Mô phỏng dữ liệu thông minh - Không cần Key)</option>
-          <option value="gemini">Gemini API Mode (Phân tích ảnh thật bằng AI của Google)</option>
-        </select>
-      </div>
+      <!-- Hidden settings-mode for backward compatibility -->
+      <select id="settings-mode" style="display: none;">
+        <option value="gemini" selected>Gemini API Mode</option>
+      </select>
 
-      <div class="form-group" id="apikey-group" style="display:none;">
+      <div class="form-group" id="apikey-group" style="display: flex;">
         <label for="apikey-input">Google Gemini API Key</label>
         <input type="password" id="apikey-input" placeholder="Nhập API Key của bạn (AIzaSy...)">
-        <span class="help-text">Nhận API Key miễn phí tại <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>. Khóa được lưu trực tiếp trên trình duyệt của bạn (local storage), đảm bảo an toàn.</span>
+        <span class="help-text">Nhận API Key miễn phí tại <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>. Khóa được lưu trực tiếp trên trình duyệt của bạn (local storage) và được đồng bộ bảo mật lên tài khoản cá nhân.</span>
       </div>
 
       <!-- Divider and Backup/Restore Section -->

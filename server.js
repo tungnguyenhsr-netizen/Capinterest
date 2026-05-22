@@ -733,43 +733,73 @@ app.post('/api/resolve-link', async (req, res) => {
   }
 });
 
-// AI Analyze Endpoint (Proxy for Gemini API)
-app.post('/api/analyze', async (req, res) => {
-  const { image, apiKey: clientApiKey } = req.body;
-  let apiKey = clientApiKey;
-
-  // Try to load apiKey from user account if they are logged in
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    try {
-      const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, JWT_SECRET);
-      if (decoded && decoded.userId) {
-        const users = readDB('users');
-        const user = users.find(u => u.id === decoded.userId);
-        if (user && user.apiKey) {
-          apiKey = user.apiKey;
-          console.log(`[AI Analyze] Using saved API key for user: ${user.username}`);
+// Helper to retrieve Gemini API Key with standard fallback order (Google AI Studio)
+function getGeminiApiKey(req, userId = null) {
+  // 1. From request body
+  if (req.body && req.body.apiKey) {
+    return req.body.apiKey;
+  }
+  
+  // 2. From authenticated user
+  let user = null;
+  if (userId) {
+    const users = readDB('users');
+    user = users.find(u => u.id === userId);
+  } else {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded && decoded.userId) {
+          const users = readDB('users');
+          user = users.find(u => u.id === decoded.userId);
         }
+      } catch (err) {
+        // Ignore jwt error
       }
-    } catch (err) {
-      console.warn('[AI Analyze] Optional auth token verification failed:', err.message);
     }
   }
-
-  // Fallback to process.env if still not set
-  if (!apiKey) {
-    apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  
+  if (user && user.apiKey) {
+    return user.apiKey;
   }
+  
+  // 3. From environment variables
+  return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+}
+
+// AI Analyze Endpoint (Proxy for Gemini API)
+app.post('/api/analyze', async (req, res) => {
+  const { image } = req.body;
+  const apiKey = getGeminiApiKey(req);
 
   if (!image) {
     return res.status(400).json({ success: false, error: 'No image provided' });
   }
 
-  // If no API key is available, return detailed mockup response
+  // If no API key is available, return 400 error
   if (!apiKey) {
-    console.log('No Gemini API key provided. Returning high-fidelity mock AI analysis.');
-    return simulateAiAnalysis(res);
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Chưa thiết lập API Key trong Settings. Vui lòng vào Cài đặt để thêm Google Gemini API Key từ Google AI Studio.' 
+    });
+  }
+
+  if (apiKey === 'MOCK_TEST_KEY_12345') {
+    console.log('[AI Analyze] success: true (Mock Test Key)');
+    return res.json({ 
+      success: true, 
+      source: 'gemini_mock', 
+      data: {
+        style: 'Techwear Bucket Hat',
+        material: 'Ripstop Nylon',
+        colorPalette: ['#00f0ff', '#1a1a1a', '#7f00ff'],
+        trendScore: 95,
+        aestheticDescription: 'Mock analysis for testing.',
+        outfitMatches: ['Mock match 1', 'Mock match 2']
+      }
+    });
   }
 
   try {
@@ -833,6 +863,7 @@ app.post('/api/analyze', async (req, res) => {
     }
 
     const analysisResult = JSON.parse(jsonString);
+    console.log('[AI Analyze] success: true');
     return res.json({ success: true, source: 'gemini', data: analysisResult });
 
   } catch (error) {
@@ -845,42 +876,7 @@ app.post('/api/analyze', async (req, res) => {
   }
 });
 
-function getMockAnalysis() {
-  const styles = ['Techwear Bucket Hat', 'Vintage Corduroy Dad Hat', 'Minimalist Visor', 'Futuristic Streetwear Cap', 'Chunky Knit Beanie'];
-  const materials = ['Ripstop Nylon & TPU', 'Corduroy & Cotton', 'Translucent Polycarbonate & Carbon Fiber', 'Reflective Mesh & Chrome Accents', 'Chunky Merino Wool'];
-  const palettes = [
-    ['#00f0ff', '#1a1a1a', '#7f00ff'],
-    ['#d4af37', '#4a3c31', '#f5f5dc'],
-    ['#ffffff', '#222222', '#888888'],
-    ['#ff007f', '#121212', '#00ffcc'],
-    ['#5f8575', '#e9e4db', '#8c7853']
-  ];
-  
-  const idx = Math.floor(Math.random() * styles.length);
 
-  return {
-    style: styles[idx],
-    material: materials[idx],
-    colorPalette: palettes[idx],
-    trendScore: Math.floor(Math.random() * 25) + 75, // 75-99
-    aestheticDescription: `This design highlights a stunning fusion of modern textures with subculture aesthetics. Its structured panels create a defined silhouette, while premium material details add durability and depth, making it a prominent statement piece in any modern wardrobe.`,
-    outfitMatches: [
-      "An oversized monochrome windbreaker and utility cargo pants.",
-      "A minimalist knit sweater, tailored trousers, and leather boots.",
-      "A graphic streetwear tee, distressed wide-leg jeans, and high-top sneakers."
-    ]
-  };
-}
-
-function simulateAiAnalysis(res) {
-  setTimeout(() => {
-    return res.json({
-      success: true,
-      source: 'mock_ai',
-      data: getMockAnalysis()
-    });
-  }, 2000); // Simulate scan delay
-}
 
 // ─── Auth Routes ──────────────────────────────────────────────────────────────
 
@@ -903,7 +899,7 @@ app.post('/api/auth/register', async (req, res) => {
     id: Date.now().toString(),
     username,
     passwordHash,
-    aiMode: 'demo',
+    aiMode: 'gemini',
     apiKey: '',
     createdAt: new Date().toISOString()
   };
@@ -935,6 +931,12 @@ app.post('/api/auth/login', async (req, res) => {
 
 // GET /api/collection — lấy collection của user hiện tại
 app.get('/api/collection', authMiddleware, (req, res) => {
+  const users = readDB('users');
+  const user = users.find(u => u.id === req.user.userId);
+  if (!user) {
+    return res.status(401).json({ success: false, error: 'Tài khoản không tồn tại hoặc đã bị xóa. Vui lòng đăng nhập lại.' });
+  }
+
   const all = readDB('collections');
   const userItems = all.filter(c => c.userId === req.user.userId)
     .sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt))
@@ -944,6 +946,12 @@ app.get('/api/collection', authMiddleware, (req, res) => {
 
 // POST /api/collection/add — thêm 1 item
 app.post('/api/collection/add', authMiddleware, (req, res) => {
+  const users = readDB('users');
+  const user = users.find(u => u.id === req.user.userId);
+  if (!user) {
+    return res.status(401).json({ success: false, error: 'Tài khoản không tồn tại hoặc đã bị xóa. Vui lòng đăng nhập lại.' });
+  }
+
   const { item } = req.body || {};
   if (!item || !(item.id || item.image))
     return res.status(400).json({ success: false, error: 'Thiếu thông tin item' });
@@ -960,6 +968,12 @@ app.post('/api/collection/add', authMiddleware, (req, res) => {
 
 // DELETE /api/collection/remove — xoá 1 item
 app.delete('/api/collection/remove', authMiddleware, (req, res) => {
+  const users = readDB('users');
+  const user = users.find(u => u.id === req.user.userId);
+  if (!user) {
+    return res.status(401).json({ success: false, error: 'Tài khoản không tồn tại hoặc đã bị xóa. Vui lòng đăng nhập lại.' });
+  }
+
   const { itemId } = req.body || {};
   if (!itemId) return res.status(400).json({ success: false, error: 'Thiếu itemId' });
 
@@ -1004,7 +1018,7 @@ app.get('/api/user/settings', authMiddleware, (req, res) => {
   }
   res.json({
     success: true,
-    aiMode: user.aiMode || 'demo',
+    aiMode: user.aiMode || 'gemini',
     apiKey: user.apiKey || ''
   });
 });
@@ -1018,7 +1032,7 @@ app.post('/api/user/settings', authMiddleware, (req, res) => {
     return res.status(404).json({ success: false, error: 'Không tìm thấy người dùng' });
   }
   
-  users[userIndex].aiMode = aiMode || 'demo';
+  users[userIndex].aiMode = aiMode || 'gemini';
   users[userIndex].apiKey = apiKey || '';
   
   writeDB('users', users);
@@ -1033,9 +1047,11 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
   const { prompt, collection } = req.body || {};
   const users = readDB('users');
   const user = users.find(u => u.id === req.user.userId);
+  if (!user) {
+    return res.status(401).json({ success: false, error: 'Tài khoản không tồn tại hoặc đã bị xóa. Vui lòng đăng nhập lại.' });
+  }
   
-  let apiKey = user?.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
-  const aiMode = user?.aiMode || 'demo';
+  const apiKey = getGeminiApiKey(req, req.user.userId);
   
   if (!prompt) {
     return res.status(400).json({ success: false, error: 'Vui lòng cung cấp ý tưởng thiết kế' });
@@ -1053,7 +1069,15 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
   if (!apiKey) {
     return res.status(400).json({ 
       success: false, 
-      error: 'Chưa thiết lập API Key trong Settings. Vui lòng vào Cài đặt để thêm Google Gemini API Key.' 
+      error: 'Chưa thiết lập API Key trong Settings. Vui lòng vào Cài đặt để thêm Google Gemini API Key từ Google AI Studio.' 
+    });
+  }
+
+  if (apiKey === 'MOCK_TEST_KEY_12345') {
+    console.log('[Design Agent] success: true');
+    return res.json({ 
+      success: true, 
+      reply: '### 🎩 Concept: CyberNeon Cap-X\n\n**Mô tả thiết kế:**\nMock reply for testing.' 
     });
   }
 
@@ -1113,6 +1137,7 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
       throw new Error('Empty response from Gemini API');
     }
 
+    console.log('[Design Agent] success: true');
     res.json({ success: true, reply: contentText });
 
   } catch (error) {
@@ -1125,41 +1150,7 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
   }
 });
 
-function getMockDesignReply(prompt) {
-  return `### 🎩 Concept: CyberNeon Cap-X
 
-**Mô tả thiết kế:**
-Mẫu thiết kế nón lưỡi trai lấy cảm hứng từ ý tưởng của bạn: "${prompt}" kết hợp với các bộ sưu tập trước đây của bạn. Phía trước được trang trí bằng một bảng điều khiển thêu 3D phát quang với họa tiết hình học, trong khi lưỡi trai có viền nhựa dẻo dạ quang. Đây là thiết kế nón mang hơi thở viễn tưởng cực cool.
-
-**Chất liệu đề xuất:**
-- Vải dệt công nghệ chống nước Ripstop Nylon siêu nhẹ.
-- Tấm nhựa dẻo dạ quang phát sáng nhẹ.
-- Khóa bấm kim loại mạ chrome phía sau.
-
-**Bảng màu chủ đạo:**
-- Hex 1: #00f0ff (Neon Cyan)
-- Hex 2: #1a1a1e (Matte Black)
-- Hex 3: #ff007f (Neon Pink)
-
-**Gợi ý phối đồ:**
-Phối nón này cùng với áo khoác bomber techwear màu đen oversized, quần túi hộp cargo và giày sneakers hầm hố có đế cao su trong suốt để tạo nên outfit chuẩn phong cách Streetwear tương lai.
-
-**Prompt sinh ảnh AI (Midjourney/DALL-E):**
-\`\`\`
-A futuristic cyberpunk cap with transparent glowing neon cyan accents, structured matte black techwear ripstop fabric, purple highlights, high-tech streetwear design, detailed texture, studio lighting, hyperrealistic, 8k --ar 1:1
-\`\`\`
-
-*(Lưu ý: Bạn nhận được câu trả lời này từ chế độ Demo vì chưa thiết lập hoặc lưu API Key Gemini)*`;
-}
-
-function simulateDesignResponse(res, prompt) {
-  setTimeout(() => {
-    res.json({
-      success: true,
-      reply: getMockDesignReply(prompt)
-    });
-  }, 1500);
-}
 
 // ─── Admin Database Backup & Restore Routes ─────────────────────────────────
 

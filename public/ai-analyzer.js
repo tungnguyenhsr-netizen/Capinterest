@@ -69,7 +69,7 @@ const AIAnalyzer = {
     this.elements.resultContent.style.display = 'none';
 
     // Retrieve settings
-    const configMode = localStorage.getItem('capinterest_mode') || 'demo';
+    const configMode = localStorage.getItem('capinterest_mode') || 'gemini';
     const apiKey = localStorage.getItem('capinterest_apikey') || '';
 
     try {

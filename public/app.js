@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAuthUI();
 
         // 3. Restore User Settings (API Key & Mode)
-        const savedMode = localStorage.getItem('capinterest_mode') || 'demo';
+        const savedMode = localStorage.getItem('capinterest_mode') || 'gemini';
         const savedKey = localStorage.getItem('capinterest_apikey') || '';
         try {
           await fetch('/api/user/settings', {
@@ -535,10 +535,10 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const res = await apiCall('/api/user/settings');
         if (res.success) {
-          const localMode = localStorage.getItem('capinterest_mode') || 'demo';
+          const localMode = localStorage.getItem('capinterest_mode') || 'gemini';
           const localKey = localStorage.getItem('capinterest_apikey') || '';
           
-          const serverMode = res.aiMode || 'demo';
+          const serverMode = res.aiMode || 'gemini';
           const serverKey = res.apiKey || '';
           
           if (!serverKey && localKey) {
@@ -757,7 +757,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 2. Settings Modal logic
   function loadSettings() {
-    const configMode = localStorage.getItem('capinterest_mode') || 'demo';
+    if (localStorage.getItem('capinterest_mode') === 'demo') {
+      localStorage.setItem('capinterest_mode', 'gemini');
+    }
+    const configMode = localStorage.getItem('capinterest_mode') || 'gemini';
     const apiKey = localStorage.getItem('capinterest_apikey') || '';
     
     DOM.settingsMode.value = configMode;
@@ -1577,7 +1580,7 @@ document.addEventListener('DOMContentLoaded', () => {
           clearRecoveryCredentials();
           
           // Reset settings to Guest default
-          localStorage.setItem('capinterest_mode', 'demo');
+          localStorage.setItem('capinterest_mode', 'gemini');
           localStorage.setItem('capinterest_apikey', '');
           loadSettings();
           
@@ -1828,7 +1831,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const res = await apiCall('/api/design-chat', 'POST', {
             prompt: promptText,
-            collection: state.likedItemsObjects
+            collection: state.likedItemsObjects,
+            apiKey: localStorage.getItem('capinterest_apikey') || ''
           });
 
           const loadingEl = document.getElementById(loadingId);
