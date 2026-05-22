@@ -789,7 +789,7 @@ app.post('/api/analyze', async (req, res) => {
     }
 
     const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         contents: [
           {
@@ -1058,7 +1058,7 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
   try {
     console.log(`[Design Agent] Calling Gemini API for user: ${req.user.username}`);
     const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         contents: [
           {

@@ -115,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modalTags: document.getElementById('modal-tags'),
     modalDesc: document.getElementById('modal-desc'),
     modalAnalyzeBtn: document.getElementById('modal-analyze-btn'),
+    modalBrainstormBtn: document.getElementById('modal-brainstorm-btn'),
     modalSourceBtn: document.getElementById('modal-source-btn'),
     
     // Settings Modal
@@ -1242,6 +1243,33 @@ document.addEventListener('DOMContentLoaded', () => {
       DOM.detailModal.classList.remove('active');
       sendImageToAiLab(item.image);
     };
+
+    if (DOM.modalBrainstormBtn) {
+      DOM.modalBrainstormBtn.onclick = () => {
+        DOM.detailModal.classList.remove('active');
+        if (!state.auth.token) {
+          showNotification('Vui lòng đăng nhập để trò chuyện với AI Design Agent!');
+          DOM.loginTriggerBtn.click();
+          return;
+        }
+        
+        // Switch tab to AI Lab
+        switchTab('ailab');
+        
+        // Toggle the sub-tab to Design Agent Chat
+        if (DOM.tabAgentBtn) {
+          DOM.tabAgentBtn.click();
+        }
+        
+        // Populate and focus prompt input
+        if (DOM.agentChatInput) {
+          DOM.agentChatInput.value = `Hãy brainstorm và gợi ý thiết kế mới lấy cảm hứng từ mẫu nón "${item.title}" của @${item.creator || 'fashion_source'} mà tôi đang xem.`;
+          DOM.agentChatInput.style.height = 'auto';
+          DOM.agentChatInput.style.height = DOM.agentChatInput.scrollHeight + 'px';
+          setTimeout(() => DOM.agentChatInput.focus(), 150);
+        }
+      };
+    }
 
     DOM.detailModal.classList.add('active');
   }
