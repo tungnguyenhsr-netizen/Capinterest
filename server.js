@@ -759,7 +759,7 @@ app.post('/api/analyze', async (req, res) => {
 
   // Fallback to process.env if still not set
   if (!apiKey) {
-    apiKey = process.env.GEMINI_API_KEY;
+    apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   }
 
   if (!image) {
@@ -836,11 +836,11 @@ app.post('/api/analyze', async (req, res) => {
     return res.json({ success: true, source: 'gemini', data: analysisResult });
 
   } catch (error) {
-    console.error('Gemini API call failed, falling back to Demo Mode:', error.response?.data || error.message);
-    return res.json({ 
-      success: true, 
-      source: 'demo-fallback', 
-      data: getMockAnalysis()
+    const errorMsg = error.response?.data?.error?.message || error.message;
+    console.error('Gemini API call failed:', errorMsg);
+    return res.status(500).json({ 
+      success: false, 
+      error: `Lỗi kết nối Gemini API: ${errorMsg}. Vui lòng kiểm tra lại API Key hoặc cấu hình tài khoản Google AI Studio.`
     });
   }
 });
@@ -1034,7 +1034,7 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
   const users = readDB('users');
   const user = users.find(u => u.id === req.user.userId);
   
-  let apiKey = user?.apiKey || process.env.GEMINI_API_KEY || '';
+  let apiKey = user?.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
   const aiMode = user?.aiMode || 'demo';
   
   if (!prompt) {
@@ -1114,11 +1114,12 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
     res.json({ success: true, reply: contentText });
 
   } catch (error) {
-    console.error('[Design Agent] Gemini API call failed, falling back to Demo Mode:', error.response?.data || error.message);
+    const errorMsg = error.response?.data?.error?.message || error.message;
+    console.error('[Design Agent] Gemini API call failed:', errorMsg);
     res.json({ 
       success: true, 
       source: 'demo-fallback',
-      reply: getMockDesignReply(prompt) + '\n\n*(Lưu ý: Đã tự động chuyển sang chế độ Demo do kết nối Gemini API thất bại)*'
+      reply: getMockDesignReply(prompt) + `\n\n*(Lưu ý: Đã tự động chuyển sang chế độ Demo do kết nối Gemini API thất bại: ${errorMsg})*`
     });
   }
 });

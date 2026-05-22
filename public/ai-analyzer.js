@@ -74,11 +74,17 @@ const AIAnalyzer = {
 
     try {
       // 2. Call backend proxy endpoint
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      const token = localStorage.getItem('capinterest_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/analyze', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify({
           image: base64Image,
           apiKey: configMode === 'gemini' ? apiKey : null // Send API Key if in Gemini mode
