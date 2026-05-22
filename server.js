@@ -1049,10 +1049,12 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
     ).join('\n');
   }
 
-  // If in demo mode or no API key, return mock response
-  if (aiMode === 'demo' || !apiKey) {
-    console.log('[Design Agent] No API key or Demo Mode active. Simulating concept.');
-    return simulateDesignResponse(res, prompt);
+  // If no API key, return error
+  if (!apiKey) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Chưa thiết lập API Key trong Settings. Vui lòng vào Cài đặt để thêm Google Gemini API Key.' 
+    });
   }
 
   try {
@@ -1116,10 +1118,9 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
   } catch (error) {
     const errorMsg = error.response?.data?.error?.message || error.message;
     console.error('[Design Agent] Gemini API call failed:', errorMsg);
-    res.json({ 
-      success: true, 
-      source: 'demo-fallback',
-      reply: getMockDesignReply(prompt) + `\n\n*(Lưu ý: Đã tự động chuyển sang chế độ Demo do kết nối Gemini API thất bại: ${errorMsg})*`
+    res.status(500).json({ 
+      success: false, 
+      error: `Lỗi kết nối Gemini API: ${errorMsg}`
     });
   }
 });

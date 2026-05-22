@@ -959,7 +959,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'cap-card';
       card.innerHTML = `
-        <img src="${item.image}" alt="${item.title}" loading="lazy">
+        <img src="${item.image}" alt="${item.title}" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=500&auto=format&fit=crop&q=60'; this.classList.add('img-fallback');">
         <div class="cap-card-overlay">
           <div class="overlay-top">
             <button class="like-btn ${isLiked ? 'liked' : ''}" data-id="${item.id || item.image}">
@@ -1109,7 +1109,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'cap-card';
       
       card.innerHTML = `
-        <img src="${item.image}" alt="${item.title}" loading="lazy" onerror="this.parentElement.remove();">
+        <img src="${item.image}" alt="${item.title}" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=500&auto=format&fit=crop&q=60'; this.classList.add('img-fallback');">
         <div class="cap-card-overlay">
           <div class="overlay-top">
             <button class="like-btn liked" data-id="${item.id || item.image}" title="Bỏ lưu">
