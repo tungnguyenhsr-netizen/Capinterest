@@ -251,6 +251,37 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let isRecovering = false;
+  let searchDebounceTimeout = null;
+
+  // Frontend query caching for /api/scrape
+  const scrapeCache = {
+    memCache: {},
+    get(query, page) {
+      const cacheKey = `scrape_cache_${query.toLowerCase()}_p${page}`;
+      try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          return JSON.parse(cached);
+        }
+      } catch (e) {
+        console.warn('[Cache] sessionStorage read failed:', e);
+      }
+      if (this.memCache[cacheKey]) {
+        return JSON.parse(JSON.stringify(this.memCache[cacheKey]));
+      }
+      return null;
+    },
+    set(query, page, data) {
+      const cacheKey = `scrape_cache_${query.toLowerCase()}_p${page}`;
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(data));
+      } catch (e) {
+        console.warn('[Cache] sessionStorage write failed:', e);
+      }
+      this.memCache[cacheKey] = JSON.parse(JSON.stringify(data));
+    }
+  };
+
   async function handleAccountAutoRecovery() {
     if (isRecovering) return false;
     const rUsername = localStorage.getItem('capinterest_recovery_username');
@@ -473,13 +504,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     state.likedItemsObjects.forEach(item => {
       const itemEl = document.createElement('div');
-      itemEl.className = 'context-item';
+      itemEl.className = 'context-thumb-item';
+      itemEl.title = `${item.title} by @${item.creator || 'streetwear'}`;
       itemEl.innerHTML = `
-        <img src="${item.image}" alt="${item.title}" class="context-img">
-        <div class="context-info">
-          <div class="context-title" title="${item.title}">${item.title}</div>
-          <div class="context-creator">@${item.creator || 'streetwear'}</div>
-        </div>
+        <img src="${item.image}" alt="${item.title}">
       `;
       DOM.likedContextList.appendChild(itemEl);
     });
@@ -767,7 +795,7 @@ document.addEventListener('DOMContentLoaded', () => {
     DOM.apikeyInput.value = apiKey;
     
     if (configMode === 'gemini') {
-      DOM.apikeyGroup.style.display = 'flex';
+      DOM.apikeyGroup.style.display = '';
     } else {
       DOM.apikeyGroup.style.display = 'none';
     }
@@ -842,11 +870,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const response = await fetch(`/api/scrape?query=${encodeURIComponent(query)}&page=${page}&_t=${Date.now()}`);
-      const result = await response.json();
+      let result = scrapeCache.get(query, page);
+      if (!result) {
+        console.log(`[Cache Miss] Fetching results from API for query: "${query}", page: ${page}`);
+        const response = await fetch(`/api/scrape?query=${encodeURIComponent(query)}&page=${page}&_t=${Date.now()}`);
+        result = await response.json();
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Cào ảnh thất bại');
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Cào ảnh thất bại');
+        }
+        scrapeCache.set(query, page, result);
+      } else {
+        console.log(`[Cache Hit] Using cached results for query: "${query}", page: ${page}`);
       }
 
       // Map and filter out duplicates using state.loadedImageUrls
@@ -1640,6 +1675,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
     DOM.logoBtn.addEventListener('click', () => {
+      if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout);
       switchTab('feed');
       DOM.searchInput.value = '';
       DOM.searchClearBtn.style.display = 'none';
@@ -1651,20 +1687,53 @@ document.addEventListener('DOMContentLoaded', () => {
       fetchScrapedHats(query);
     });
 
+    // Search input debouncing
+    DOM.searchInput.addEventListener('input', () => {
+      const query = DOM.searchInput.value.trim();
+      if (query) {
+        DOM.searchClearBtn.style.display = 'block';
+      } else {
+        DOM.searchClearBtn.style.display = 'none';
+      }
+
+      if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout);
+      searchDebounceTimeout = setTimeout(() => {
+        state.searchQuery = query;
+        let targetQuery = query;
+        if (query) {
+          if (state.selectedCategory !== 'all') {
+            targetQuery = `${query} ${state.selectedCategory}`;
+          }
+        } else {
+          targetQuery = state.selectedCategory === 'all' ? 'trendy caps' : `${state.selectedCategory} headwear`;
+        }
+        fetchScrapedHats(targetQuery);
+      }, 500);
+    });
+
     // Search bar submit
     DOM.searchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
+        if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout);
         const query = DOM.searchInput.value.trim();
+        state.searchQuery = query;
+        let targetQuery = query;
         if (query) {
-          state.searchQuery = query;
           DOM.searchClearBtn.style.display = 'block';
-          fetchScrapedHats(query);
+          if (state.selectedCategory !== 'all') {
+            targetQuery = `${query} ${state.selectedCategory}`;
+          }
+        } else {
+          DOM.searchClearBtn.style.display = 'none';
+          targetQuery = state.selectedCategory === 'all' ? 'trendy caps' : `${state.selectedCategory} headwear`;
         }
+        fetchScrapedHats(targetQuery);
       }
     });
 
     // Search clear button
     DOM.searchClearBtn.addEventListener('click', () => {
+      if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout);
       DOM.searchInput.value = '';
       DOM.searchClearBtn.style.display = 'none';
       state.searchQuery = '';
@@ -1707,7 +1776,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     DOM.settingsMode.addEventListener('change', () => {
       if (DOM.settingsMode.value === 'gemini') {
-        DOM.apikeyGroup.style.display = 'flex';
+        DOM.apikeyGroup.style.display = '';
       } else {
         DOM.apikeyGroup.style.display = 'none';
       }
@@ -2061,6 +2130,19 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         // Fallback: analyze using current src directly (if URL conversion failed/not needed)
         AIAnalyzer.analyze(DOM.scanPreview.src);
+      }
+    });
+
+    // Pause/Resume polling on visibility change (active/inactive tab)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        console.log('[Sync] Tab hidden. Pausing collection polling.');
+        stopCollectionPolling();
+      } else if (document.visibilityState === 'visible') {
+        if (state.auth.token) {
+          console.log('[Sync] Tab visible. Resuming collection polling.');
+          startCollectionPolling();
+        }
       }
     });
   }

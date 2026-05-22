@@ -1621,7 +1621,8 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: calc(60px + env(safe-area-inset-bottom));
+  min-height: 60px;
   background: rgba(13, 20, 35, 0.85); /* Matches var(--bg-modal) and glassmorphism */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -2344,5 +2345,100 @@ body {
     border-right: 8px solid var(--border-light) !important;
     top: 14px;
   }
+}
+
+/* ==========================================================================
+   Tablet Header Navigation Overflow Fix (between 768px and 1024px)
+   ========================================================================== */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .search-container {
+    width: 25%; /* Narrow down search container to prevent overflow */
+  }
+  .header-actions {
+    gap: 8px; /* Narrow down gaps between action items */
+  }
+  .main-header {
+    padding: 16px 20px; /* Decrease header padding to gain horizontal space */
+  }
+}
+
+/* ==========================================================================
+   Premium Cyberpunk Micro-Animations, Transitions & Glow Effects
+   ========================================================================== */
+
+/* 1. Header Logo Hover Glitch Animation */
+@keyframes cyber-glitch {
+  0% {
+    text-shadow: 2px -2px 0 var(--accent-cyan), -2px 2px 0 var(--accent-pink);
+  }
+  25% {
+    text-shadow: -2px 2px 0 var(--accent-cyan), 2px -2px 0 var(--accent-pink);
+  }
+  50% {
+    text-shadow: 2px 2px 0 var(--accent-cyan), -2px -2px 0 var(--accent-pink);
+  }
+  75% {
+    text-shadow: -2px -2px 0 var(--accent-cyan), 2px 2px 0 var(--accent-pink);
+  }
+  100% {
+    text-shadow: 2px -2px 0 var(--accent-cyan), -2px 2px 0 var(--accent-pink);
+  }
+}
+
+.header-logo:hover span {
+  animation: cyber-glitch 0.3s linear infinite;
+  text-shadow: 0 0 8px var(--accent-cyan);
+}
+
+/* 2. Cyberpunk Category Active Pill Gradient and Glow */
+.cat-pill.active {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
+  color: var(--text-primary) !important;
+  font-weight: 700 !important;
+  border-color: var(--accent-cyan) !important;
+  box-shadow: 0 4px 15px rgba(0, 240, 255, 0.35), 0 0 10px rgba(0, 240, 255, 0.2) !important;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
+}
+
+/* 3. Cyberpunk Button Pulsing Glow Animations */
+@keyframes cyber-pulse {
+  0% {
+    box-shadow: 0 4px 15px rgba(0, 240, 255, 0.2), 0 0 0 0px rgba(0, 240, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(0, 240, 255, 0.4), 0 0 0 6px rgba(0, 240, 255, 0);
+  }
+  100% {
+    box-shadow: 0 4px 15px rgba(0, 240, 255, 0.2), 0 0 0 0px rgba(0, 240, 255, 0);
+  }
+}
+
+@keyframes cyber-pulse-pink {
+  0% {
+    box-shadow: 0 4px 15px rgba(255, 0, 127, 0.25), 0 0 0 0px rgba(255, 0, 127, 0.35);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(255, 0, 127, 0.45), 0 0 0 6px rgba(255, 0, 127, 0);
+  }
+  100% {
+    box-shadow: 0 4px 15px rgba(255, 0, 127, 0.25), 0 0 0 0px rgba(255, 0, 127, 0);
+  }
+}
+
+.cta-btn.active:hover:not(:disabled) {
+  animation: cyber-pulse 1.2s infinite !important;
+  transform: translateY(-2px) scale(1.02);
+}
+
+.cta-btn.active.brainstorm-btn:hover:not(:disabled) {
+  animation: cyber-pulse-pink 1.2s infinite !important;
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* 4. Enhanced Cap Card Hover Transition (Scale and Cyber Glow) */
+.cap-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 12px 30px rgba(0, 240, 255, 0.35), 0 0 15px rgba(0, 240, 255, 0.2) !important;
 }
 

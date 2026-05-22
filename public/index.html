@@ -345,6 +345,20 @@
         <div class="timeline-container">
           <div class="timeline-line"></div>
           
+          <!-- Node v1.5.3 -->
+          <div class="timeline-item">
+            <div class="timeline-badge v153-badge" style="background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan);">v1.5.3</div>
+            <div class="timeline-card">
+              <span class="timeline-date">22 Tháng 5, 2026</span>
+              <h3>🎨 Tinh Chỉnh UI/UX & Tối Ưu Hóa Hiệu Năng Hệ Thống</h3>
+              <ul class="timeline-list">
+                <li><span class="highlight-cyan">Sửa Lỗi Giao Diện & Di Động:</span> Khắc phục triệt để lỗi squashed sidebar tại AI Lab bằng cách sửa đổi cấu trúc CSS/JS context, căn chỉnh header tránh tràn viền trên tablet (768px - 1024px), và tối ưu hóa chiều cao Mobile Nav Bar trên các thiết bị tràn viền (safe-area-inset-bottom).</li>
+                <li><span class="highlight-cyan">Hiệu ứng Cyberpunk:</span> Nâng cấp hiệu ứng chuyển động, neon hover glow cho card nón và các nút chức năng, tích hợp hoạt ảnh glitch độc đáo cho logo.</li>
+                <li><span class="highlight-cyan">Tối Ưu Hóa Hiệu Năng Client-side:</span> Bổ sung debounce 500ms cho ô tìm kiếm, tích hợp cơ chế cache API /api/scrape vào sessionStorage để giảm tải DB và Serper API, đồng thời tự động dừng polling khi tab trình duyệt không hoạt động.</li>
+              </ul>
+            </div>
+          </div>
+
           <!-- Node v1.5.2 -->
           <div class="timeline-item">
             <div class="timeline-badge v152-badge" style="background: var(--accent-pink); box-shadow: 0 0 10px var(--accent-pink);">v1.5.2</div>
@@ -500,7 +514,7 @@
         <option value="gemini" selected>Gemini API Mode</option>
       </select>
 
-      <div class="form-group" id="apikey-group" style="display: flex;">
+      <div class="form-group" id="apikey-group">
         <label for="apikey-input">Google Gemini API Key</label>
         <input type="password" id="apikey-input" placeholder="Nhập API Key của bạn (AIzaSy...)">
         <span class="help-text">Nhận API Key miễn phí tại <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>. Khóa được lưu trực tiếp trên trình duyệt của bạn (local storage) và được đồng bộ bảo mật lên tài khoản cá nhân.</span>
