@@ -376,7 +376,7 @@ body {
   
   /* Give space at the bottom for Mobile Nav Bar */
   .app-container {
-    padding-bottom: 80px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
   }
 }
 
@@ -1541,7 +1541,7 @@ body {
 @media (max-width: 768px) {
   /* Position Migration Banner above mobile bottom bar */
   .migration-banner {
-    bottom: 80px !important;
+    bottom: calc(80px + env(safe-area-inset-bottom)) !important;
     right: 20px;
     left: 20px;
     width: auto;
@@ -1606,7 +1606,7 @@ body {
 
 @media (max-width: 576px) {
   .migration-banner {
-    bottom: 80px !important;
+    bottom: calc(80px + env(safe-area-inset-bottom)) !important;
     right: 16px;
     left: 16px;
   }

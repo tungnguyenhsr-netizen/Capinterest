@@ -832,7 +832,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const toast = document.createElement('div');
     toast.className = 'status-indicator';
     toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
+    if (window.innerWidth <= 768) {
+      toast.style.bottom = 'calc(80px + env(safe-area-inset-bottom))';
+    } else {
+      toast.style.bottom = '20px';
+    }
     toast.style.right = '20px';
     toast.style.zIndex = '1000';
     toast.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
