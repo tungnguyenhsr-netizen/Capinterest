@@ -302,7 +302,41 @@ document.addEventListener('DOMContentLoaded', () => {
       notif_like_add: "Đã lưu vào bộ sưu tập nón yêu thích!",
       notif_like_remove: "Đã bỏ lưu nón.",
       notif_like_error: "Lỗi khi lưu nón.",
-      notif_like_remove_error: "Lỗi khi bỏ lưu nón."
+      notif_like_remove_error: "Lỗi khi bỏ lưu nón.",
+
+      // Add Link Modal
+      add_title: "Thêm Nón Từ Liên Kết",
+      add_subtitle: "Dán liên kết hình ảnh nón từ Pinterest hoặc web khác để hiển thị trên bản tin của bạn",
+      add_label_url: "Liên kết hình ảnh (Image URL)",
+      add_placeholder_url: "Dán link Pinterest, Unsplash hoặc link ảnh...",
+      add_btn_resolve: "Tự động lấy ảnh",
+      add_label_title: "Tên nón (Tiêu đề thiết kế)",
+      add_placeholder_title: "Ví dụ: Nón Snapback Đen Retro",
+      add_label_creator: "Nhà thiết kế / Nguồn ảnh",
+      add_placeholder_creator: "Ví dụ: pinterest_user",
+      add_label_category: "Phân loại nón",
+      add_btn_save: "Thêm vào Bản tin",
+
+      // Auth Modal
+      auth_tab_login: "Đăng nhập",
+      auth_tab_register: "Đăng ký",
+      auth_label_username: "Tên đăng nhập",
+      auth_placeholder_username: "Nhập tên đăng nhập...",
+      auth_placeholder_username_reg: "Tên đăng nhập (ít nhất 3 ký tự)...",
+      auth_label_password: "Mật khẩu",
+      auth_placeholder_password: "Nhập mật khẩu...",
+      auth_placeholder_password_reg: "Mật khẩu (ít nhất 6 ký tự)...",
+      auth_label_confirm_password: "Xác nhận mật khẩu",
+      auth_placeholder_confirm_password: "Nhập lại mật khẩu...",
+      auth_btn_login: "Đăng nhập",
+      auth_btn_register: "Đăng ký tài khoản",
+
+      // Migration Banner
+      mig_title: "Đồng bộ dữ liệu",
+      mig_text_prefix: "Phát hiện ",
+      mig_text_suffix: " mẫu nón yêu thích được lưu cục bộ. Đồng bộ lên tài khoản này ngay?",
+      mig_btn_confirm: "Đồng bộ ngay",
+      mig_btn_cancel: "Hủy"
     },
     en: {
       // Header & Navigation
@@ -398,7 +432,41 @@ document.addEventListener('DOMContentLoaded', () => {
       notif_like_add: "Saved to favorite hats collection!",
       notif_like_remove: "Removed from collection.",
       notif_like_error: "Error saving hat.",
-      notif_like_remove_error: "Error removing hat."
+      notif_like_remove_error: "Error removing hat.",
+
+      // Add Link Modal
+      add_title: "Add Hat from Link",
+      add_subtitle: "Paste a hat image link from Pinterest or other sites to display on your feed",
+      add_label_url: "Image URL",
+      add_placeholder_url: "Paste Pinterest, Unsplash or image link...",
+      add_btn_resolve: "Auto Fetch Image",
+      add_label_title: "Hat Name (Design Title)",
+      add_placeholder_title: "e.g., Retro Black Snapback",
+      add_label_creator: "Designer / Image Source",
+      add_placeholder_creator: "e.g., pinterest_user",
+      add_label_category: "Hat Category",
+      add_btn_save: "Add to Feed",
+
+      // Auth Modal
+      auth_tab_login: "Login",
+      auth_tab_register: "Register",
+      auth_label_username: "Username",
+      auth_placeholder_username: "Enter username...",
+      auth_placeholder_username_reg: "Username (at least 3 characters)...",
+      auth_label_password: "Password",
+      auth_placeholder_password: "Enter password...",
+      auth_placeholder_password_reg: "Password (at least 6 characters)...",
+      auth_label_confirm_password: "Confirm Password",
+      auth_placeholder_confirm_password: "Confirm password...",
+      auth_btn_login: "Login",
+      auth_btn_register: "Register Account",
+
+      // Migration Banner
+      mig_title: "Sync Data",
+      mig_text_prefix: "Detected ",
+      mig_text_suffix: " locally saved favorite hats. Sync to this account now?",
+      mig_btn_confirm: "Sync Now",
+      mig_btn_cancel: "Cancel"
     }
   };
 
@@ -418,6 +486,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('agent-chat-input');
     if (chatInput && dict.agent_input_placeholder) {
       chatInput.placeholder = dict.agent_input_placeholder;
+    }
+
+    // Add Link Modal input placeholders
+    const addUrlInput = document.getElementById('add-url-input');
+    if (addUrlInput && dict.add_placeholder_url) {
+      addUrlInput.placeholder = dict.add_placeholder_url;
+    }
+    const addTitleInput = document.getElementById('add-title-input');
+    if (addTitleInput && dict.add_placeholder_title) {
+      addTitleInput.placeholder = dict.add_placeholder_title;
+    }
+    const addCreatorInput = document.getElementById('add-creator-input');
+    if (addCreatorInput && dict.add_placeholder_creator) {
+      addCreatorInput.placeholder = dict.add_placeholder_creator;
+    }
+
+    // Auth Modal input placeholders
+    const loginUsernameInput = document.getElementById('login-username');
+    if (loginUsernameInput && dict.auth_placeholder_username) {
+      loginUsernameInput.placeholder = dict.auth_placeholder_username;
+    }
+    const loginPasswordInput = document.getElementById('login-password');
+    if (loginPasswordInput && dict.auth_placeholder_password) {
+      loginPasswordInput.placeholder = dict.auth_placeholder_password;
+    }
+    const regUsernameInput = document.getElementById('register-username');
+    if (regUsernameInput && dict.auth_placeholder_username_reg) {
+      regUsernameInput.placeholder = dict.auth_placeholder_username_reg;
+    }
+    const regPasswordInput = document.getElementById('register-password');
+    if (regPasswordInput && dict.auth_placeholder_password_reg) {
+      regPasswordInput.placeholder = dict.auth_placeholder_password_reg;
+    }
+    const regConfirmPasswordInput = document.getElementById('register-confirm-password');
+    if (regConfirmPasswordInput && dict.auth_placeholder_confirm_password) {
+      regConfirmPasswordInput.placeholder = dict.auth_placeholder_confirm_password;
     }
     
     // Also re-render elements that depend on dynamic counts/labels
@@ -1721,7 +1825,10 @@ document.addEventListener('DOMContentLoaded', () => {
       DOM.modalTags.appendChild(span);
     });
 
-    DOM.modalDesc.textContent = item.title + ' - Kiểu nón thời trang hiện đại được nhiều nhà thiết kế săn đón.';
+    const descText = item.description || (item.title + (state.lang === 'en'
+      ? ' - Modern trendy hat design highly sought after by designers.'
+      : ' - Kiểu nón thời trang hiện đại được nhiều nhà thiết kế săn đón.'));
+    DOM.modalDesc.textContent = descText;
 
     // Setup action button inside modal
     DOM.modalAnalyzeBtn.onclick = () => {

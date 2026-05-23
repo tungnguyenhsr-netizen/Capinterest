@@ -506,20 +506,20 @@
           </div>
 
           <div class="modal-description-box">
-            <h3>Chi tiết thiết kế</h3>
+            <h3 data-i18n="detail_specs_title">Chi tiết thiết kế</h3>
             <p id="modal-desc">Hình ảnh chi tiết mẫu nón xu hướng được tổng hợp từ internet.</p>
           </div>
 
           <div class="modal-cta-box">
             <button class="cta-btn active" id="modal-analyze-btn">
               <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
-              Đưa Vào AI Lab Phân Tích
+              <span data-i18n="detail_btn_analyze">Đưa Vào AI Lab Phân Tích</span>
             </button>
             <button class="cta-btn active brainstorm-btn" id="modal-brainstorm-btn">
               <svg viewBox="0 0 24 24" width="16" height="16"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-4H6V8h12v2z" fill="currentColor"/></svg>
-              Brainstorm Thiết Kế Mới
+              <span data-i18n="detail_btn_brainstorm">Brainstorm Thiết Kế Mới</span>
             </button>
-            <a href="#" target="_blank" class="outline-btn text-center" id="modal-source-btn">Xem nguồn ảnh gốc</a>
+            <a href="#" target="_blank" class="outline-btn text-center" id="modal-source-btn" data-i18n="detail_btn_source">Xem nguồn ảnh gốc</a>
           </div>
         </div>
       </div>
@@ -581,14 +581,14 @@
   <div class="modal-overlay" id="add-link-modal">
     <div class="modal-card settings-card">
       <button class="close-modal" id="close-add-modal">&times;</button>
-      <h2>Thêm Nón Từ Liên Kết</h2>
-      <p class="subtitle">Dán liên kết hình ảnh nón từ Pinterest hoặc web khác để hiển thị trên bản tin của bạn</p>
+      <h2 data-i18n="add_title">Thêm Nón Từ Liên Kết</h2>
+      <p class="subtitle" data-i18n="add_subtitle">Dán liên kết hình ảnh nón từ Pinterest hoặc web khác để hiển thị trên bản tin của bạn</p>
       
       <div class="form-group">
-        <label for="add-url-input">Liên kết hình ảnh (Image URL) <span style="color:var(--accent-cyan)">*</span></label>
+        <label for="add-url-input" data-i18n="add_label_url">Liên kết hình ảnh (Image URL) <span style="color:var(--accent-cyan)">*</span></label>
         <div style="display: flex; gap: 8px;">
           <input type="url" id="add-url-input" placeholder="Dán link Pinterest, Unsplash hoặc link ảnh..." required style="flex: 1;">
-          <button class="cta-btn active" id="resolve-url-btn" style="padding: 0 15px; margin: 0; min-height: 40px; font-size: 0.85rem; white-space: nowrap;">Tự động lấy ảnh</button>
+          <button class="cta-btn active" id="resolve-url-btn" style="padding: 0 15px; margin: 0; min-height: 40px; font-size: 0.85rem; white-space: nowrap;" data-i18n="add_btn_resolve">Tự động lấy ảnh</button>
         </div>
         <span class="help-text" id="resolve-status" style="margin-top: 5px; display: none;"></span>
         <div id="resolve-preview-container" style="display: none; margin-top: 10px; text-align: center;">
@@ -597,30 +597,30 @@
       </div>
 
       <div class="form-group">
-        <label for="add-title-input">Tên nón (Tiêu đề thiết kế)</label>
+        <label for="add-title-input" data-i18n="add_label_title">Tên nón (Tiêu đề thiết kế)</label>
         <input type="text" id="add-title-input" placeholder="Ví dụ: Nón Snapback Đen Retro">
       </div>
 
       <div class="form-group">
-        <label for="add-creator-input">Nhà thiết kế / Nguồn ảnh</label>
+        <label for="add-creator-input" data-i18n="add_label_creator">Nhà thiết kế / Nguồn ảnh</label>
         <input type="text" id="add-creator-input" placeholder="Ví dụ: pinterest_user">
       </div>
 
       <div class="form-group">
-        <label for="add-category-select">Phân loại nón</label>
+        <label for="add-category-select" data-i18n="add_label_category">Phân loại nón</label>
         <select id="add-category-select">
-          <option value="trendy">Xu hướng</option>
-          <option value="snapback">Snapback</option>
-          <option value="bucket">Nón Bucket</option>
-          <option value="beanie">Beanie len</option>
-          <option value="dadhat">Mũ lưỡi trai cổ điển</option>
-          <option value="techwear">Techwear / Visor</option>
-          <option value="creative">Sáng tạo lạ</option>
+          <option value="trendy" data-i18n="cat_trendy">Xu hướng</option>
+          <option value="snapback" data-i18n="cat_snapback">Snapback</option>
+          <option value="bucket" data-i18n="cat_bucket">Nón Bucket</option>
+          <option value="beanie" data-i18n="cat_beanie">Beanie len</option>
+          <option value="dadhat" data-i18n="cat_dadhat">Mũ lưỡi trai cổ điển</option>
+          <option value="techwear" data-i18n="cat_techwear">Techwear / Visor</option>
+          <option value="creative" data-i18n="cat_creative">Sáng tạo lạ</option>
         </select>
       </div>
 
       <div class="settings-actions">
-        <button class="cta-btn active" id="save-add-btn">Thêm vào Bản tin</button>
+        <button class="cta-btn active" id="save-add-btn" data-i18n="add_btn_save">Thêm vào Bản tin</button>
       </div>
     </div>
   </div>
@@ -630,40 +630,40 @@
     <div class="modal-card auth-card">
       <button class="close-modal" id="close-auth-modal">&times;</button>
       <div class="auth-tabs">
-        <button class="auth-tab active" id="tab-login-btn">Đăng nhập</button>
-        <button class="auth-tab" id="tab-register-btn">Đăng ký</button>
+        <button class="auth-tab active" id="tab-login-btn" data-i18n="auth_tab_login">Đăng nhập</button>
+        <button class="auth-tab" id="tab-register-btn" data-i18n="auth_tab_register">Đăng ký</button>
       </div>
       
       <!-- Login Form -->
       <form id="login-form" class="auth-form active">
         <div class="form-group">
-          <label for="login-username">Tên đăng nhập</label>
+          <label for="login-username" data-i18n="auth_label_username">Tên đăng nhập</label>
           <input type="text" id="login-username" placeholder="Nhập tên đăng nhập..." required autocomplete="username">
         </div>
         <div class="form-group">
-          <label for="login-password">Mật khẩu</label>
+          <label for="login-password" data-i18n="auth_label_password">Mật khẩu</label>
           <input type="password" id="login-password" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
         </div>
         <span class="auth-error" id="login-error" style="display:none;">Lỗi</span>
-        <button type="submit" class="cta-btn active" id="login-submit-btn" style="width: 100%; margin-top: 15px;">Đăng nhập</button>
+        <button type="submit" class="cta-btn active" id="login-submit-btn" style="width: 100%; margin-top: 15px;" data-i18n="auth_btn_login">Đăng nhập</button>
       </form>
 
       <!-- Register Form -->
       <form id="register-form" class="auth-form">
         <div class="form-group">
-          <label for="register-username">Tên đăng nhập</label>
+          <label for="register-username" data-i18n="auth_label_username">Tên đăng nhập</label>
           <input type="text" id="register-username" placeholder="Tên đăng nhập (ít nhất 3 ký tự)..." required autocomplete="username">
         </div>
         <div class="form-group">
-          <label for="register-password">Mật khẩu</label>
+          <label for="register-password" data-i18n="auth_label_password">Mật khẩu</label>
           <input type="password" id="register-password" placeholder="Mật khẩu (ít nhất 6 ký tự)..." required autocomplete="new-password">
         </div>
         <div class="form-group">
-          <label for="register-confirm-password">Xác nhận mật khẩu</label>
+          <label for="register-confirm-password" data-i18n="auth_label_confirm_password">Xác nhận mật khẩu</label>
           <input type="password" id="register-confirm-password" placeholder="Nhập lại mật khẩu..." required autocomplete="new-password">
         </div>
         <span class="auth-error" id="register-error" style="display:none;">Lỗi</span>
-        <button type="submit" class="cta-btn active" id="register-submit-btn" style="width: 100%; margin-top: 15px;">Đăng ký tài khoản</button>
+        <button type="submit" class="cta-btn active" id="register-submit-btn" style="width: 100%; margin-top: 15px;" data-i18n="auth_btn_register">Đăng ký tài khoản</button>
       </form>
     </div>
   </div>
@@ -675,13 +675,13 @@
         <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
       </svg>
       <div class="migration-text">
-        <h4>Đồng bộ dữ liệu</h4>
-        <p>Phát hiện <strong id="migration-count">0</strong> mẫu nón yêu thích được lưu cục bộ. Đồng bộ lên tài khoản này ngay?</p>
+        <h4 data-i18n="mig_title">Đồng bộ dữ liệu</h4>
+        <p><span data-i18n="mig_text_prefix">Phát hiện </span><strong id="migration-count">0</strong><span data-i18n="mig_text_suffix"> mẫu nón yêu thích được lưu cục bộ. Đồng bộ lên tài khoản này ngay?</span></p>
       </div>
     </div>
     <div class="migration-actions">
-      <button class="cta-btn active" id="migration-confirm-btn">Đồng bộ ngay</button>
-      <button class="outline-btn" id="migration-cancel-btn">Để sau</button>
+      <button class="cta-btn active" id="migration-confirm-btn" data-i18n="mig_btn_confirm">Đồng bộ ngay</button>
+      <button class="outline-btn" id="migration-cancel-btn" data-i18n="mig_btn_cancel">Để sau</button>
     </div>
   </div>
 
@@ -689,24 +689,24 @@
   <nav class="mobile-nav-bar" id="mobile-nav-bar">
     <button class="mobile-nav-item active" id="mobile-feed-nav-btn">
       <svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z" fill="currentColor"/></svg>
-      <span>Bản tin</span>
+      <span data-i18n="nav_feed">Bản tin</span>
     </button>
     <button class="mobile-nav-item" id="mobile-collection-nav-btn">
       <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor"/></svg>
-      <span>Yêu thích</span>
+      <span data-i18n="nav_collection">Bộ sưu tập</span>
       <span class="collection-badge" id="mobile-collection-badge" style="display:none;">0</span>
     </button>
     <button class="mobile-nav-item" id="mobile-ailab-nav-btn">
       <svg viewBox="0 0 24 24" width="20" height="20"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" fill="currentColor"/></svg>
-      <span>AI Lab</span>
+      <span data-i18n="nav_ailab">AI Lab</span>
     </button>
     <button class="mobile-nav-item" id="mobile-changelog-nav-btn">
       <svg viewBox="0 0 24 24" width="20" height="20"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" fill="currentColor"/></svg>
-      <span>Nhật ký</span>
+      <span data-i18n="nav_changelog">Nhật ký</span>
     </button>
     <button class="mobile-nav-item" id="mobile-add-link-btn">
       <svg viewBox="0 0 24 24" width="20" height="20"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>
-      <span>Dán link</span>
+      <span data-i18n="nav_add_link">Dán link nón</span>
     </button>
   </nav>
 
