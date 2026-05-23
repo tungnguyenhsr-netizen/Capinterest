@@ -1020,7 +1020,17 @@ document.addEventListener('DOMContentLoaded', () => {
       let svgCode = svgMatch ? svgMatch[1].trim() : '';
       
       const conceptMatch = rawReply.match(/(?:Concept|🎩 Concept):\s*([^\n#\*]+)/i);
-      const conceptName = conceptMatch ? conceptMatch[1].trim() : '';
+      let conceptName = conceptMatch ? conceptMatch[1].trim() : '';
+      if (!conceptName) {
+        // Fallback: search for first header (e.g. ### 🎩 Concept Name)
+        const headerMatch = rawReply.match(/^###?\s+(?:🎩\s*)?([^\n#\*]+)/m);
+        if (headerMatch) {
+          conceptName = headerMatch[1].trim();
+        }
+      }
+      if (!conceptName) {
+        conceptName = 'AI Design Concept';
+      }
       
       if (conceptName) {
         const finalSvg = svgCode || generateCyberpunkLogoSvg(conceptName);
@@ -2476,13 +2486,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const loadingEl = document.getElementById(loadingId);
           if (loadingEl) {
-            const bubbleEl = loadingEl.closest('.msg-bubble');
-            if (bubbleEl) {
-              bubbleEl.innerHTML = formatMarkdownToHtml(res.reply);
-            }
-          } else {
-            appendChatMessage('agent', formatMarkdownToHtml(res.reply));
+            const msgDiv = loadingEl.closest('.message');
+            if (msgDiv) msgDiv.remove();
           }
+          appendChatMessage('agent', formatMarkdownToHtml(res.reply), res.reply);
         } catch (err) {
           console.error(err);
           const loadingEl = document.getElementById(loadingId);
