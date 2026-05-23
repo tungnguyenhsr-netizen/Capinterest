@@ -22,6 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
     currentPage: 1,
     isLoadingNextPage: false,
     hasMore: true,
+    selectedReferenceId: null,
+    lang: localStorage.getItem('capinterest_lang') || 'vi',
     defaultHats: [
       {
         id: 'def-1',
@@ -198,8 +200,237 @@ document.addEventListener('DOMContentLoaded', () => {
     agentChatInput: document.getElementById('agent-chat-input'),
     agentSendBtn: document.getElementById('agent-send-btn'),
     likedContextList: document.getElementById('liked-context-list'),
-    agentContextCount: document.getElementById('agent-context-count')
+    agentContextCount: document.getElementById('agent-context-count'),
+    settingsLangSelect: document.getElementById('settings-lang-select'),
+    chatReferenceContainer: document.getElementById('chat-reference-container'),
+    chatReferenceTitle: document.getElementById('chat-reference-title'),
+    chatReferenceClear: document.getElementById('chat-reference-clear')
   };
+
+  const TRANSLATIONS = {
+    vi: {
+      // Header & Navigation
+      logo_sub: "Interest",
+      search_placeholder: "Tìm kiếm nón, mũ thời trang (Ví dụ: cyberpunk, vintage dad hat, bucket...)",
+      nav_feed: "Bản tin",
+      nav_collection: "Bộ sưu tập",
+      nav_ailab: "AI Lab",
+      nav_changelog: "Nhật ký",
+      nav_add_link: "Dán link nón",
+      nav_login: "Đăng nhập",
+      nav_logout: "Đăng xuất",
+      
+      // Category pills
+      cat_all: "Tất cả",
+      cat_trendy: "Xu hướng",
+      cat_snapback: "Snapback",
+      cat_bucket: "Nón Bucket",
+      cat_beanie: "Beanie len",
+      cat_dadhat: "Mũ lưỡi trai cổ điển",
+      cat_techwear: "Techwear / Visor",
+      cat_creative: "Sáng tạo lạ",
+      
+      // Settings
+      settings_title: "Cài Đặt Cấu Hình AI",
+      settings_subtitle: "Nhập API Key lấy từ Google AI Studio để phân tích nón bằng AI (gemini-3.5-flash)",
+      settings_lang_label: "Ngôn ngữ giao diện",
+      settings_apikey_label: "Google Gemini API Key",
+      settings_apikey_help: "Nhận API Key miễn phí tại Google AI Studio. Khóa được lưu trực tiếp trên trình duyệt của bạn (local storage) và được đồng bộ bảo mật lên tài khoản cá nhân.",
+      settings_backup_label: "Quản trị hệ thống (Backup & Restore)",
+      settings_backup_help: "Sao lưu toàn bộ cơ sở dữ liệu hệ thống (Tài khoản + Bộ sưu tập) về máy tính hoặc nhập lại từ tệp đã lưu.",
+      settings_backup_btn: "Tải Backup JSON",
+      settings_restore_btn: "Phục hồi JSON",
+      settings_save_btn: "Lưu cấu hình",
+      
+      // AI Lab Tabs
+      tab_scanner: "Máy Quét AI (Scanner)",
+      tab_agent: "AI Design Agent Chat",
+      
+      // Scanner
+      scanner_title: "Trình Quét Thiết Kế (AI Scanner)",
+      scanner_subtitle: "Tải ảnh nón của bạn lên hoặc chọn mẫu để AI tự động phân tích",
+      scanner_dropzone_main: "Kéo thả ảnh vào đây hoặc click để duyệt tệp",
+      scanner_dropzone_sub: "Hỗ trợ PNG, JPG, JPEG",
+      scanner_samples_title: "Hoặc chọn mẫu nón thiết kế sẵn:",
+      scanner_btn_scan: "Quét & Phân Tích Bằng AI",
+      scanner_btn_reset: "Quét ảnh khác",
+      
+      // Results
+      results_title: "Kết quả Phân Tích Thiết Kế",
+      results_subtitle: "Thông tin chi tiết về kiểu dáng, chất liệu, màu sắc và độ hot",
+      results_placeholder: "Chưa có dữ liệu phân tích. Hãy tải ảnh lên và nhấn \"Quét & Phân Tích Bằng AI\" ở cột bên trái.",
+      results_trend_label: "Điểm Xu Hướng AI (Trend Score)",
+      results_trend_scanning: "Đang quét...",
+      results_trend_verdict: "Nón đang rất thịnh hành trên các mạng xã hội streetwear.",
+      results_style_label: "Kiểu Dáng",
+      results_material_label: "Chất Liệu Chủ Đạo",
+      results_color_label: "Hệ Màu Thiết Kế (Dominant Colors)",
+      results_desc_label: "Đánh Giá Thiết Kế & Thẩm Mỹ",
+      results_outfit_label: "Gợi Ý Phối Đồ Từ Stylist AI",
+      
+      // Design Agent Chat
+      agent_sidebar_title: "Bộ sưu tập cảm hứng",
+      agent_sidebar_count: "nón",
+      agent_sidebar_subtitle: "AI Design Agent sẽ tham khảo các mẫu nón này để nắm bắt gu thẩm mỹ của bạn",
+      agent_sidebar_empty: "Chưa có nón yêu thích. Hãy \"Thích\" nón trên Bản tin để làm dữ liệu thiết kế!",
+      agent_welcome_msg: "Chào bạn! Tôi là Trợ lý Thiết kế AI của CapInterest. Tôi đã đọc bộ sưu tập nón bạn đã thích để thấu hiểu gu thời trang của bạn.<br><br>Hãy đưa ra ý tưởng thiết kế nón của bạn (Ví dụ: <em>\"Mix nón Beanie phong cách Techwear với logo phát quang neon\"</em> hoặc <em>\"Tạo một nón bucket vải nhung corduroy màu nâu phối viền cam neon\"</em>), tôi sẽ thiết kế bản vẽ chi tiết và tạo prompt vẽ ảnh AI cho bạn!",
+      agent_input_placeholder: "Mô tả ý tưởng thiết kế nón của bạn ở đây... (Ấn Enter để gửi, Shift+Enter xuống dòng)",
+      agent_btn_send: "Gửi ý tưởng",
+      ref_label: "Đang tham chiếu:",
+      save_design_btn: "Lưu thiết kế vào BST",
+      save_design_success: "Đã lưu thiết kế AI vào bộ sưu tập!",
+      save_design_error: "Lỗi khi lưu thiết kế.",
+      
+      // Collection
+      coll_title: "Bộ Sưu Tập Nón Yêu Thích",
+      coll_count: "mẫu nón",
+      coll_subtitle: "Các mẫu nón bạn đã lưu lại. Nhấn vào ảnh để xem chi tiết hoặc phân tích bằng AI.",
+      coll_empty: "Chưa có nón nào trong bộ sưu tập. Hãy nhấn nút ♡ trên các mẫu nón ở Bản tin để lưu lại!",
+      
+      // Popups & General
+      detail_specs_title: "Chi tiết thiết kế",
+      detail_btn_analyze: "Đưa Vào AI Lab Phân Tích",
+      detail_btn_brainstorm: "Brainstorm Thiết Kế Mới",
+      detail_btn_source: "Xem nguồn ảnh gốc",
+      
+      // Feed loading & Statuses
+      feed_loading: "Đang tải thêm nón...",
+      feed_empty: "Không tìm thấy mẫu nón nào. Hãy thử tìm kiếm từ khóa khác!",
+      status_scraping: "Đang cào ảnh nón mới từ web...",
+      
+      // Notifications
+      notif_like_add: "Đã lưu vào bộ sưu tập nón yêu thích!",
+      notif_like_remove: "Đã bỏ lưu nón.",
+      notif_like_error: "Lỗi khi lưu nón.",
+      notif_like_remove_error: "Lỗi khi bỏ lưu nón."
+    },
+    en: {
+      // Header & Navigation
+      logo_sub: "Interest",
+      search_placeholder: "Search trendy hats/caps (e.g., cyberpunk, vintage dad hat, bucket...)",
+      nav_feed: "Feed",
+      nav_collection: "Collection",
+      nav_ailab: "AI Lab",
+      nav_changelog: "Changelog",
+      nav_add_link: "Paste Hat Link",
+      nav_login: "Login",
+      nav_logout: "Logout",
+      
+      // Category pills
+      cat_all: "All",
+      cat_trendy: "Trending",
+      cat_snapback: "Snapback",
+      cat_bucket: "Bucket Hat",
+      cat_beanie: "Beanie",
+      cat_dadhat: "Classic Cap",
+      cat_techwear: "Techwear / Visor",
+      cat_creative: "Creative",
+      
+      // Settings
+      settings_title: "AI Configuration Settings",
+      settings_subtitle: "Enter Gemini API Key from Google AI Studio for AI analysis (gemini-3.5-flash)",
+      settings_lang_label: "Interface Language",
+      settings_apikey_label: "Google Gemini API Key",
+      settings_apikey_help: "Get your free API Key at Google AI Studio. The key is saved directly in your browser's local storage and securely synchronized with your personal account.",
+      settings_backup_label: "System Administration (Backup & Restore)",
+      settings_backup_help: "Back up the entire system database (Accounts + Collections) to your computer or restore from a saved file.",
+      settings_backup_btn: "Download Backup JSON",
+      settings_restore_btn: "Restore JSON",
+      settings_save_btn: "Save Settings",
+      
+      // AI Lab Tabs
+      tab_scanner: "AI Scanner",
+      tab_agent: "AI Design Agent Chat",
+      
+      // Scanner
+      scanner_title: "Design Scanner (AI Scanner)",
+      scanner_subtitle: "Upload your hat image or select a preset sample for auto AI analysis",
+      scanner_dropzone_main: "Drag & drop image here or click to browse",
+      scanner_dropzone_sub: "Supports PNG, JPG, JPEG",
+      scanner_samples_title: "Or choose a preset hat sample:",
+      scanner_btn_scan: "Scan & Analyze with AI",
+      scanner_btn_reset: "Scan another image",
+      
+      // Results
+      results_title: "Design Analysis Results",
+      results_subtitle: "Detailed information about shape, material, color, and trendiness",
+      results_placeholder: "No analysis data. Upload an image and click \"Scan & Analyze with AI\" on the left panel.",
+      results_trend_label: "AI Trend Score",
+      results_trend_scanning: "Scanning...",
+      results_trend_verdict: "This hat is highly trending in streetwear social media.",
+      results_style_label: "Shape/Style",
+      results_material_label: "Primary Material",
+      results_color_label: "Design Color System (Dominant Colors)",
+      results_desc_label: "Design & Aesthetic Evaluation",
+      results_outfit_label: "Outfit Suggestions from AI Stylist",
+      
+      // Design Agent Chat
+      agent_sidebar_title: "Inspiration Collection",
+      agent_sidebar_count: "hats",
+      agent_sidebar_subtitle: "AI Design Agent will refer to these hats to capture your design tastes",
+      agent_sidebar_empty: "No liked hats. Like hats on the Feed to provide design reference data!",
+      agent_welcome_msg: "Hello! I am CapInterest's AI Design Assistant. I have analyzed your liked hat collection to understand your fashion tastes.<br><br>Tell me your hat design idea (e.g., <em>\"Mix a beanie style with Techwear and neon glowing logos\"</em> or <em>\"Create a corduroy brown bucket hat with neon orange trims\"</em>). I will draft a detailed concept and generate AI image prompts for you!",
+      agent_input_placeholder: "Describe your hat design idea here... (Press Enter to send, Shift+Enter for new line)",
+      agent_btn_send: "Send Idea",
+      ref_label: "Referencing:",
+      save_design_btn: "Save Design to Collection",
+      save_design_success: "AI design saved to collection!",
+      save_design_error: "Error saving design.",
+      
+      // Collection
+      coll_title: "Favorite Hats Collection",
+      coll_count: "hats",
+      coll_subtitle: "Your saved hat models. Click on an image to view details or analyze with AI.",
+      coll_empty: "No hats in collection. Press the ♡ button on hats in the Feed to save them!",
+      
+      // Popups & General
+      detail_specs_title: "Design Details",
+      detail_btn_analyze: "Send to AI Lab Scanner",
+      detail_btn_brainstorm: "Brainstorm New Design",
+      detail_btn_source: "View Original Image Source",
+      
+      // Feed loading & Statuses
+      feed_loading: "Loading more hats...",
+      feed_empty: "No hats found. Try another search keyword!",
+      status_scraping: "Scraping new hats from the web...",
+      
+      // Notifications
+      notif_like_add: "Saved to favorite hats collection!",
+      notif_like_remove: "Removed from collection.",
+      notif_like_error: "Error saving hat.",
+      notif_like_remove_error: "Error removing hat."
+    }
+  };
+
+  function applyTranslations(lang) {
+    const dict = TRANSLATIONS[lang] || TRANSLATIONS.vi;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (dict[key]) {
+        el.innerHTML = dict[key];
+      }
+    });
+
+    const searchInput = document.getElementById('search-input');
+    if (searchInput && dict.search_placeholder) {
+      searchInput.placeholder = dict.search_placeholder;
+    }
+    const chatInput = document.getElementById('agent-chat-input');
+    if (chatInput && dict.agent_input_placeholder) {
+      chatInput.placeholder = dict.agent_input_placeholder;
+    }
+    
+    // Also re-render elements that depend on dynamic counts/labels
+    const count = state.likedItemsObjects.length;
+    const collCountEl = document.getElementById('collection-count');
+    if (collCountEl) {
+      collCountEl.innerHTML = `${count} <span data-i18n="coll_count">${dict.coll_count}</span>`;
+    }
+    const agentContextCountEl = document.getElementById('agent-context-count');
+    if (agentContextCountEl) {
+      agentContextCountEl.innerHTML = `${count} <span data-i18n="agent_sidebar_count">${dict.agent_sidebar_count}</span>`;
+    }
+  }
 
   // API Request Helper
   async function apiCall(endpoint, method = 'GET', body = null) {
@@ -488,39 +719,248 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!DOM.likedContextList) return;
 
     const count = state.likedItemsObjects.length;
+    const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.vi;
     if (DOM.agentContextCount) {
-      DOM.agentContextCount.textContent = `${count} nón`;
+      DOM.agentContextCount.innerHTML = `${count} <span data-i18n="agent_sidebar_count">${dict.agent_sidebar_count}</span>`;
     }
 
     DOM.likedContextList.innerHTML = '';
     if (count === 0) {
       DOM.likedContextList.innerHTML = `
-        <div style="text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.9rem;">
-          Chưa có nón yêu thích. Hãy "Thích" nón trên Bản tin để làm dữ liệu thiết kế!
+        <div style="text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.9rem;" data-i18n="agent_sidebar_empty">
+          ${dict.agent_sidebar_empty}
         </div>
       `;
       return;
     }
 
     state.likedItemsObjects.forEach(item => {
+      const itemId = item.id || item.image;
+      const isSelected = state.selectedReferenceId === itemId;
       const itemEl = document.createElement('div');
-      itemEl.className = 'context-thumb-item';
+      itemEl.className = `context-thumb-item ${isSelected ? 'selected-ref' : ''}`;
+      itemEl.style.cursor = 'pointer';
       itemEl.title = `${item.title} by @${item.creator || 'streetwear'}`;
+      
+      if (isSelected) {
+        itemEl.style.outline = '2px solid var(--accent-cyan)';
+        itemEl.style.boxShadow = '0 0 10px var(--accent-cyan)';
+      }
+      
       itemEl.innerHTML = `
         <img src="${item.image}" alt="${item.title}">
       `;
+      itemEl.addEventListener('click', () => {
+        if (state.selectedReferenceId === itemId) {
+          state.selectedReferenceId = null;
+        } else {
+          state.selectedReferenceId = itemId;
+        }
+        renderChatContext();
+        updateChatReferenceUI();
+      });
       DOM.likedContextList.appendChild(itemEl);
     });
   }
 
-  function appendChatMessage(sender, contentHtml) {
+  function updateChatReferenceUI() {
+    if (!DOM.chatReferenceContainer || !DOM.chatReferenceTitle) return;
+    
+    if (state.selectedReferenceId) {
+      const item = state.likedItemsObjects.find(o => (o.id || o.image) === state.selectedReferenceId);
+      if (item) {
+        DOM.chatReferenceTitle.textContent = item.title;
+        DOM.chatReferenceContainer.style.display = 'flex';
+      } else {
+        state.selectedReferenceId = null;
+        DOM.chatReferenceContainer.style.display = 'none';
+      }
+    } else {
+      DOM.chatReferenceContainer.style.display = 'none';
+      DOM.chatReferenceTitle.textContent = '';
+    }
+  }
+
+  function generateCyberpunkLogoSvg(title) {
+    const cleanTitle = title.replace(/["']/g, '');
+    const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a14"/>
+      <stop offset="50%" stop-color="#120e2e"/>
+      <stop offset="100%" stop-color="#050508"/>
+    </linearGradient>
+    <linearGradient id="neonGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#4facfe"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff007f"/>
+      <stop offset="100%" stop-color="#7f00ff"/>
+    </linearGradient>
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Background -->
+  <rect width="400" height="400" fill="url(#cyberGrad)"/>
+  
+  <!-- Cyberpunk grid lines -->
+  <g stroke="#1a1a2e" stroke-width="1">
+    <line x1="0" y1="50" x2="400" y2="50"/><line x1="0" y1="100" x2="400" y2="100"/><line x1="0" y1="150" x2="400" y2="150"/><line x1="0" y1="200" x2="400" y2="200"/><line x1="0" y1="250" x2="400" y2="250"/><line x1="0" y1="300" x2="400" y2="300"/><line x1="0" y1="350" x2="400" y2="350"/>
+    <line x1="50" y1="0" x2="50" y2="400"/><line x1="100" y1="0" x2="100" y2="400"/><line x1="150" y1="0" x2="150" y2="400"/><line x1="200" y1="0" x2="200" y2="400"/><line x1="250" y1="0" x2="250" y2="400"/><line x1="300" y1="0" x2="300" y2="400"/><line x1="350" y1="0" x2="350" y2="400"/>
+  </g>
+  
+  <!-- Outer glowing border -->
+  <rect x="20" y="20" width="360" height="360" rx="12" fill="none" stroke="url(#neonGrad)" stroke-width="2" filter="url(#neonGlow)" opacity="0.6"/>
+  
+  <!-- Centered Scaled Cap Logo -->
+  <g transform="translate(100, 60) scale(2)">
+    <path d="M 50,15 C 26,15 16,35 16,62 C 35,66 65,66 84,62 C 84,35 74,15 50,15 Z" fill="url(#accentGrad)" opacity="0.25" stroke="url(#accentGrad)" stroke-width="2" />
+    <path d="M 50,15 L 50,44" stroke="#00f2fe" stroke-width="2" stroke-linecap="round" opacity="0.8" />
+    <path d="M 32,25 C 40,32 40,42 50,44" fill="none" stroke="#7f00ff" stroke-width="1.5" opacity="0.7" />
+    <path d="M 68,25 C 60,32 60,42 50,44" fill="none" stroke="#7f00ff" stroke-width="1.5" opacity="0.7" />
+    <polygon points="50,29 58,34 58,44 50,49 42,44 42,34" fill="#00f2fe" filter="url(#neonGlow)" opacity="0.85" />
+    <polygon points="50,32 55,35 55,43 50,46 45,43 45,35" fill="#0a0a14" />
+    <circle cx="50" cy="39" r="2" fill="#ff007f" filter="url(#neonGlow)" />
+    <path d="M 12,61 C 30,74 70,74 88,61 C 94,65 91,72 81,77 C 65,83 35,83 19,77 C 9,72 6,65 12,61 Z" fill="url(#neonGrad)" filter="url(#neonGlow)" opacity="0.9" />
+    <path d="M 15,62 C 32,73 68,73 85,62" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+    <path d="M 21,66 C 35,75 65,75 79,66" fill="none" stroke="#ff007f" stroke-width="2" stroke-linecap="round" opacity="0.8" />
+  </g>
+  
+  <text x="200" y="325" fill="#ffffff" font-family="'Outfit', sans-serif" font-size="18" font-weight="800" text-anchor="middle" filter="url(#neonGlow)">${cleanTitle}</text>
+  <text x="200" y="352" fill="#00f2fe" font-family="'Outfit', sans-serif" font-size="10" font-weight="600" text-anchor="middle" letter-spacing="1">CAPINTEREST DESIGN LAB</text>
+</svg>`.trim();
+    return svg;
+  }
+
+  async function saveAiConceptToCollection(conceptName, rawText, svgCode) {
+    const svgDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgCode);
+    let desc = 'Thiết kế nón độc đáo được tạo bởi AI Design Agent.';
+    const descMatch = rawText.match(/(?:Mô tả thiết kế|Design Description):\s*([\s\S]+?)(?:\*\*|$|###)/i);
+    if (descMatch) {
+      desc = descMatch[1].trim();
+      if (desc.length > 250) {
+        desc = desc.slice(0, 247) + '...';
+      }
+    }
+    
+    const item = {
+      id: 'ai-concept-' + Date.now(),
+      title: conceptName,
+      image: svgDataUrl,
+      creator: 'AI Design Agent',
+      category: 'creative',
+      source: 'AI Lab',
+      url: '#',
+      description: desc,
+      tags: ['ai-design', 'vector-logo', 'cyberpunk', 'creative']
+    };
+    
+    const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.vi;
+    
+    try {
+      if (state.auth.token) {
+        await apiCall('/api/collection/add', 'POST', { item });
+        state.likedItems.push(item.id);
+        state.likedItemsObjects.push(item);
+        if (state.auth.username) {
+          localStorage.setItem('capinterest_backup_likes_' + state.auth.username.toLowerCase(), JSON.stringify(state.likedItemsObjects));
+        }
+      } else {
+        state.likedItems.push(item.id);
+        state.likedItemsObjects.push(item);
+        localStorage.setItem('capinterest_likes', JSON.stringify(state.likedItems));
+        localStorage.setItem('capinterest_likes_objects', JSON.stringify(state.likedItemsObjects));
+      }
+      
+      updateLikeButtonsUI();
+      const count = state.likedItemsObjects.length;
+      if (DOM.collectionBadge) {
+        DOM.collectionBadge.textContent = count;
+        DOM.collectionBadge.style.display = count > 0 ? 'inline-block' : 'none';
+      }
+      const mobileCollectionBadge = document.getElementById('mobile-collection-badge');
+      if (mobileCollectionBadge) {
+        mobileCollectionBadge.textContent = count;
+        mobileCollectionBadge.style.display = count > 0 ? 'inline-block' : 'none';
+      }
+      
+      const collCountEl = document.getElementById('collection-count');
+      if (collCountEl) {
+        collCountEl.innerHTML = `${count} <span data-i18n="coll_count">${dict.coll_count}</span>`;
+      }
+      
+      showNotification(dict.save_design_success || 'Đã lưu thiết kế AI vào bộ sưu tập!');
+      return true;
+    } catch (err) {
+      console.error(err);
+      showNotification(dict.save_design_error || 'Lỗi khi lưu thiết kế.');
+      return false;
+    }
+  }
+
+  function appendChatMessage(sender, contentHtml, rawReply = '') {
     if (!DOM.agentChatMessages) return;
 
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${sender === 'user' ? 'user-msg' : 'agent-msg'}`;
+    
+    let extraHtml = '';
+    const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.vi;
+    
+    if (sender === 'agent' && rawReply) {
+      const svgMatch = rawReply.match(/```(?:xml|svg|html)?\s*(<svg[\s\S]*?<\/svg>)\s*```/i) || rawReply.match(/(<svg[\s\S]*?<\/svg>)/i);
+      let svgCode = svgMatch ? svgMatch[1].trim() : '';
+      
+      const conceptMatch = rawReply.match(/(?:Concept|🎩 Concept):\s*([^\n#\*]+)/i);
+      const conceptName = conceptMatch ? conceptMatch[1].trim() : '';
+      
+      if (conceptName) {
+        const finalSvg = svgCode || generateCyberpunkLogoSvg(conceptName);
+        const svgDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(finalSvg);
+        
+        extraHtml = `
+          <div class="ai-design-preview-box" style="margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-light); border-radius: 8px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div style="width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; background: #07070d; border-radius: 8px; border: 1px solid rgba(0, 242, 254, 0.2); box-shadow: 0 4px 20px rgba(0, 242, 254, 0.15); margin-bottom: 12px; overflow: hidden;">
+              <img src="${svgDataUrl}" style="width: 100%; height: 100%; object-fit: contain;">
+            </div>
+            <button class="cta-btn active save-design-btn" style="padding: 6px 14px; font-size: 0.8rem; min-height: auto; width: auto; margin: 0; display: flex; align-items: center; gap: 6px;">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+              <span>${dict.save_design_btn}</span>
+            </button>
+          </div>
+        `;
+        
+        setTimeout(() => {
+          const saveBtn = msgDiv.querySelector('.save-design-btn');
+          if (saveBtn) {
+            saveBtn.addEventListener('click', async () => {
+              saveBtn.disabled = true;
+              const originalText = saveBtn.innerHTML;
+              saveBtn.innerHTML = 'Saving...';
+              
+              const success = await saveAiConceptToCollection(conceptName, rawReply, finalSvg);
+              if (success) {
+                saveBtn.innerHTML = `✓ ${dict.save_design_success || 'Saved'}`;
+                saveBtn.style.background = 'var(--accent-cyan)';
+                saveBtn.style.color = '#000';
+              } else {
+                saveBtn.innerHTML = dict.save_design_error || 'Error';
+                saveBtn.disabled = false;
+              }
+            });
+          }
+        }, 50);
+      }
+    }
+
     msgDiv.innerHTML = `
       <div class="msg-bubble">
         ${contentHtml}
+        ${extraHtml}
       </div>
     `;
 
@@ -667,6 +1107,9 @@ document.addEventListener('DOMContentLoaded', () => {
     registerEventListeners();
     loadSettings();
     renderSampleThumbnails();
+    
+    // Apply translations on load
+    applyTranslations(state.lang);
     
     // Add default and manual hats to seen urls to prevent duplicates
     state.defaultHats.forEach(h => state.loadedImageUrls.add(h.image));
@@ -1787,6 +2230,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     DOM.saveSettingsBtn.addEventListener('click', saveSettings);
 
+    if (DOM.settingsLangSelect) {
+      DOM.settingsLangSelect.value = state.lang;
+      DOM.settingsLangSelect.addEventListener('change', () => {
+        const selectedLang = DOM.settingsLangSelect.value;
+        state.lang = selectedLang;
+        localStorage.setItem('capinterest_lang', selectedLang);
+        applyTranslations(selectedLang);
+      });
+    }
+
     // Backup & Restore listeners
     if (DOM.dbBackupBtn) {
       DOM.dbBackupBtn.addEventListener('click', async () => {
@@ -1902,10 +2355,16 @@ document.addEventListener('DOMContentLoaded', () => {
         `);
 
         try {
+          const refItem = state.selectedReferenceId 
+            ? state.likedItemsObjects.find(o => (o.id || o.image) === state.selectedReferenceId) 
+            : null;
+
           const res = await apiCall('/api/design-chat', 'POST', {
             prompt: promptText,
             collection: state.likedItemsObjects,
-            apiKey: localStorage.getItem('capinterest_apikey') || ''
+            apiKey: localStorage.getItem('capinterest_apikey') || '',
+            lang: state.lang,
+            referenceItem: refItem
           });
 
           const loadingEl = document.getElementById(loadingId);
@@ -1938,6 +2397,14 @@ document.addEventListener('DOMContentLoaded', () => {
           sendMessage();
         }
       });
+
+      if (DOM.chatReferenceClear) {
+        DOM.chatReferenceClear.addEventListener('click', () => {
+          state.selectedReferenceId = null;
+          renderChatContext();
+          updateChatReferenceUI();
+        });
+      }
     }
 
     // Detail Modal Close

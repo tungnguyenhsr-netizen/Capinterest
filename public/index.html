@@ -43,7 +43,7 @@
           <path d="M 15,62 C 32,73 68,73 85,62" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
           <path d="M 21,66 C 35,75 65,75 79,66" fill="none" stroke="#ff007f" stroke-width="2.5" stroke-linecap="round" opacity="0.7" />
         </svg>
-        <span>Cap<span>Interest</span></span>
+        <span>Cap<span data-i18n="logo_sub">Interest</span></span>
       </div>
 
       <!-- Search Bar -->
@@ -59,24 +59,24 @@
       <div class="header-actions">
         <button class="nav-btn active" id="feed-nav-btn">
           <svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z" fill="currentColor"/></svg>
-          Bản tin
+          <span data-i18n="nav_feed">Bản tin</span>
         </button>
         <button class="nav-btn" id="collection-nav-btn">
           <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor"/></svg>
-          Bộ sưu tập
+          <span data-i18n="nav_collection">Bộ sưu tập</span>
           <span class="collection-badge" id="collection-badge" style="display:none;">0</span>
         </button>
         <button class="nav-btn" id="ailab-nav-btn">
           <svg viewBox="0 0 24 24" width="18" height="18"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" fill="currentColor"/></svg>
-          AI Lab
+          <span data-i18n="nav_ailab">AI Lab</span>
         </button>
         <button class="nav-btn" id="changelog-btn">
           <svg viewBox="0 0 24 24" width="18" height="18"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" fill="currentColor"/></svg>
-          Nhật ký
+          <span data-i18n="nav_changelog">Nhật ký</span>
         </button>
         <button class="nav-btn accent-btn" id="add-link-btn" title="Thêm nón bằng link ảnh">
           <svg viewBox="0 0 24 24" width="18" height="18"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>
-          Dán link nón
+          <span data-i18n="nav_add_link">Dán link nón</span>
         </button>
         <!-- User Profile Badge -->
         <div class="user-profile-btn" id="user-profile-btn" style="display: none;">
@@ -90,7 +90,7 @@
         </div>
         <button class="nav-btn" id="login-trigger-btn">
           <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="currentColor"/></svg>
-          Đăng nhập
+          <span data-i18n="nav_login">Đăng nhập</span>
         </button>
         <button class="icon-btn" id="settings-btn" title="Cấu hình API Key">
           <svg viewBox="0 0 24 24" width="20" height="20"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/></svg>
@@ -99,14 +99,14 @@
     </header>
 
     <div class="category-bar">
-      <button class="cat-pill active" data-category="all">Tất cả</button>
-      <button class="cat-pill" data-category="trendy">Xu hướng</button>
-      <button class="cat-pill" data-category="snapback">Snapback</button>
-      <button class="cat-pill" data-category="bucket">Nón Bucket</button>
-      <button class="cat-pill" data-category="beanie">Beanie len</button>
-      <button class="cat-pill" data-category="dadhat">Mũ lưỡi trai cổ điển</button>
-      <button class="cat-pill" data-category="techwear">Techwear / Visor</button>
-      <button class="cat-pill" data-category="creative">Sáng tạo lạ</button>
+      <button class="cat-pill active" data-category="all" data-i18n="cat_all">Tất cả</button>
+      <button class="cat-pill" data-category="trendy" data-i18n="cat_trendy">Xu hướng</button>
+      <button class="cat-pill" data-category="snapback" data-i18n="cat_snapback">Snapback</button>
+      <button class="cat-pill" data-category="bucket" data-i18n="cat_bucket">Nón Bucket</button>
+      <button class="cat-pill" data-category="beanie" data-i18n="cat_beanie">Beanie len</button>
+      <button class="cat-pill" data-category="dadhat" data-i18n="cat_dadhat">Mũ lưỡi trai cổ điển</button>
+      <button class="cat-pill" data-category="techwear" data-i18n="cat_techwear">Techwear / Visor</button>
+      <button class="cat-pill" data-category="creative" data-i18n="cat_creative">Sáng tạo lạ</button>
     </div>
 
     <!-- Main Workspace Area -->
@@ -147,11 +147,11 @@
               <svg viewBox="0 0 24 24" width="24" height="24" style="vertical-align:middle;margin-right:8px;color:var(--accent-pink);">
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor"/>
               </svg>
-              Bộ Sưu Tập Nón Yêu Thích
+              <span data-i18n="coll_title">Bộ Sưu Tập Nón Yêu Thích</span>
             </h2>
-            <span class="collection-count" id="collection-count">0 mẫu nón</span>
+            <span class="collection-count" id="collection-count">0 <span data-i18n="coll_count">mẫu nón</span></span>
           </div>
-          <p class="collection-subtitle">Các mẫu nón bạn đã lưu lại. Nhấn vào ảnh để xem chi tiết hoặc phân tích bằng AI.</p>
+          <p class="collection-subtitle" data-i18n="coll_subtitle">Các mẫu nón bạn đã lưu lại. Nhấn vào ảnh để xem chi tiết hoặc phân tích bằng AI.</p>
           <button class="outline-btn" id="clear-collection-btn" style="display:none;">Xóa tất cả</button>
         </div>
         
@@ -172,11 +172,11 @@
         <div class="ailab-tab-headers">
           <button class="ailab-tab-btn active" id="ailab-tab-scanner-btn">
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
-            Máy Quét AI (Scanner)
+            <span data-i18n="tab_scanner">Máy Quét AI (Scanner)</span>
           </button>
           <button class="ailab-tab-btn" id="ailab-tab-agent-btn">
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="currentColor"/></svg>
-            AI Design Agent Chat
+            <span data-i18n="tab_agent">AI Design Agent Chat</span>
           </button>
         </div>
 
@@ -186,8 +186,8 @@
             <!-- Left Column: Input and Scanner -->
             <div class="ailab-card scanner-container">
               <div class="card-header">
-                <h2>Trình Quét Thiết Kế (AI Scanner)</h2>
-                <p>Tải ảnh nón của bạn lên hoặc chọn mẫu để AI tự động phân tích</p>
+                <h2 data-i18n="scanner_title">Trình Quét Thiết Kế (AI Scanner)</h2>
+                <p data-i18n="scanner_subtitle">Tải ảnh nón của bạn lên hoặc chọn mẫu để AI tự động phân tích</p>
               </div>
               
               <!-- Upload Area -->
@@ -195,8 +195,8 @@
                 <input type="file" id="file-input" accept="image/*" style="display:none;">
                 <div class="dropzone-content" id="dropzone-prompt">
                   <svg viewBox="0 0 24 24" width="48" height="48" class="upload-icon"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" fill="currentColor"/></svg>
-                  <p class="main-text">Kéo thả ảnh vào đây hoặc click để duyệt tệp</p>
-                  <p class="sub-text">Hỗ trợ PNG, JPG, JPEG</p>
+                  <p class="main-text" data-i18n="scanner_dropzone_main">Kéo thả ảnh vào đây hoặc click để duyệt tệp</p>
+                  <p class="sub-text" data-i18n="scanner_dropzone_sub">Hỗ trợ PNG, JPG, JPEG</p>
                 </div>
                 
                 <!-- Scan Viewport -->
@@ -209,7 +209,7 @@
 
               <!-- Predefined Samples -->
               <div class="samples-section">
-                <h3>Hoặc chọn mẫu nón thiết kế sẵn:</h3>
+                <h3 data-i18n="scanner_samples_title">Hoặc chọn mẫu nón thiết kế sẵn:</h3>
                 <div class="sample-thumbnails" id="sample-list">
                   <!-- Javascript will inject default assets here -->
                 </div>
@@ -218,23 +218,23 @@
               <div class="action-bar">
                 <button class="cta-btn active" id="start-scan-btn" disabled>
                   <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
-                  Quét & Phân Tích Bằng AI
+                  <span data-i18n="scanner_btn_scan">Quét & Phân Tích Bằng AI</span>
                 </button>
-                <button class="outline-btn" id="reset-scan-btn" style="display:none;">Quét ảnh khác</button>
+                <button class="outline-btn" id="reset-scan-btn" style="display:none;" data-i18n="scanner_btn_reset">Quét ảnh khác</button>
               </div>
             </div>
 
             <!-- Right Column: Analysis Results -->
             <div class="ailab-card results-container">
               <div class="card-header">
-                <h2>Kết quả Phân Tích Thiết Kế</h2>
-                <p>Thông tin chi tiết về kiểu dáng, chất liệu, màu sắc và độ hot</p>
+                <h2 data-i18n="results_title">Kết quả Phân Tích Thiết Kế</h2>
+                <p data-i18n="results_subtitle">Thông tin chi tiết về kiểu dáng, chất liệu, màu sắc và độ hot</p>
               </div>
               
               <!-- Result Placeholder State -->
               <div class="result-placeholder" id="result-placeholder">
                 <svg viewBox="0 0 24 24" width="64" height="64"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/></svg>
-                <p>Chưa có dữ liệu phân tích. Hãy tải ảnh lên và nhấn "Quét & Phân Tích Bằng AI" ở cột bên trái.</p>
+                <p data-i18n="results_placeholder">Chưa có dữ liệu phân tích. Hãy tải ảnh lên và nhấn "Quét & Phân Tích Bằng AI" ở cột bên trái.</p>
               </div>
 
               <!-- Result Content State -->
@@ -249,9 +249,9 @@
                     </svg>
                   </div>
                   <div class="trend-info">
-                    <span class="label">Điểm Xu Hướng AI (Trend Score)</span>
-                    <h3 id="trend-level">Đang quét...</h3>
-                    <p id="trend-verdict">Nón đang rất thịnh hành trên các mạng xã hội streetwear.</p>
+                    <span class="label" data-i18n="results_trend_label">Điểm Xu Hướng AI (Trend Score)</span>
+                    <h3 id="trend-level" data-i18n="results_trend_scanning">Đang quét...</h3>
+                    <p id="trend-verdict" data-i18n="results_trend_verdict">Nón đang rất thịnh hành trên các mạng xã hội streetwear.</p>
                   </div>
                 </div>
 
@@ -260,18 +260,18 @@
                 <!-- Specs Grid -->
                 <div class="specs-grid">
                   <div class="spec-item">
-                    <span class="spec-label">Kiểu Dáng</span>
+                    <span class="spec-label" data-i18n="results_style_label">Kiểu Dáng</span>
                     <span class="spec-val" id="res-style">-</span>
                   </div>
                   <div class="spec-item">
-                    <span class="spec-label">Chất Liệu Chủ Đạo</span>
+                    <span class="spec-label" data-i18n="results_material_label">Chất Liệu Chủ Đạo</span>
                     <span class="spec-val" id="res-material">-</span>
                   </div>
                 </div>
 
                 <!-- Color Palette -->
                 <div class="color-palette-section">
-                  <h4>Hệ Màu Thiết Kế (Dominant Colors)</h4>
+                  <h4 data-i18n="results_color_label">Hệ Màu Thiết Kế (Dominant Colors)</h4>
                   <div class="color-swatches" id="res-palette">
                     <!-- Hex colors inserted here -->
                   </div>
@@ -279,13 +279,13 @@
 
                 <!-- Design Description -->
                 <div class="analysis-text-section">
-                  <h4>Đánh Giá Thiết Kế & Thẩm Mỹ</h4>
+                  <h4 data-i18n="results_desc_label">Đánh Giá Thiết Kế & Thẩm Mỹ</h4>
                   <p id="res-desc" class="aesthetic-desc">-</p>
                 </div>
 
                 <!-- Outfit Matches -->
                 <div class="outfit-section">
-                  <h4>Gợi Ý Phối Đồ Từ Stylist AI</h4>
+                  <h4 data-i18n="results_outfit_label">Gợi Ý Phối Đồ Từ Stylist AI</h4>
                   <ul class="outfit-list" id="res-outfits">
                     <!-- Outfit matches here -->
                   </ul>
@@ -301,10 +301,10 @@
             <!-- Left sidebar: user collection context -->
             <aside class="liked-context-sidebar">
               <div class="sidebar-header">
-                <h3>Bộ sưu tập cảm hứng</h3>
-                <span class="context-count" id="agent-context-count">0 nón</span>
+                <h3 data-i18n="agent_sidebar_title">Bộ sưu tập cảm hứng</h3>
+                <span class="context-count" id="agent-context-count">0 <span data-i18n="agent_sidebar_count">nón</span></span>
               </div>
-              <p class="subtitle">AI Design Agent sẽ tham khảo các mẫu nón này để nắm bắt gu thẩm mỹ của bạn</p>
+              <p class="subtitle" data-i18n="agent_sidebar_subtitle">AI Design Agent sẽ tham khảo các mẫu nón này để nắm bắt gu thẩm mỹ của bạn</p>
               <div class="liked-context-list" id="liked-context-list">
                 <!-- Thumbnail items will be dynamically loaded -->
               </div>
@@ -321,9 +321,18 @@
                   </div>
                 </div>
               </div>
-              <div class="chat-input-area">
-                <textarea id="agent-chat-input" placeholder="Mô tả ý tưởng thiết kế nón của bạn ở đây... (Ấn Enter để gửi, Shift+Enter xuống dòng)"></textarea>
-                <button class="cta-btn active" id="agent-send-btn">Gửi ý tưởng</button>
+              <div class="chat-input-area" style="display: flex; flex-direction: column;">
+                <div id="chat-reference-container" style="display: none; padding: 6px 12px; background: rgba(0, 242, 254, 0.1); border: 1px solid var(--accent-cyan); border-radius: 6px; margin-bottom: 8px; align-items: center; justify-content: space-between; font-size: 0.85rem; width: 100%;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--accent-cyan); font-weight: 500;" data-i18n="ref_label">Đang tham chiếu:</span>
+                    <span id="chat-reference-title" style="color: var(--text-main); font-weight: 600;">Nón</span>
+                  </div>
+                  <button id="chat-reference-clear" style="background: none; border: none; color: var(--accent-pink); font-size: 1.1rem; cursor: pointer; padding: 0 4px; line-height: 1;">&times;</button>
+                </div>
+                <div style="display: flex; gap: 10px; width: 100%;">
+                  <textarea id="agent-chat-input" placeholder="Mô tả ý tưởng thiết kế nón của bạn ở đây... (Ấn Enter để gửi, Shift+Enter xuống dòng)" style="flex: 1;"></textarea>
+                  <button class="cta-btn active" id="agent-send-btn" data-i18n="agent_btn_send">Gửi ý tưởng</button>
+                </div>
               </div>
             </div>
           </div>
@@ -345,6 +354,21 @@
         <div class="timeline-container">
           <div class="timeline-line"></div>
           
+          <!-- Node v1.6.0 -->
+          <div class="timeline-item">
+            <div class="timeline-badge v160-badge" style="background: var(--accent-purple); box-shadow: 0 0 10px var(--accent-purple);">v1.6.0</div>
+            <div class="timeline-card">
+              <span class="timeline-date">23 Tháng 5, 2026</span>
+              <h3>🌐 Hỗ Trợ Đa Ngôn Ngữ & Thiết Kế Logo SVG Tự Động Từ AI Design Agent</h3>
+              <ul class="timeline-list">
+                <li><span class="highlight-purple">Hỗ Trợ Song Ngữ (VI/EN):</span> Tích hợp cấu trúc dịch tự động toàn bộ giao diện dựa trên thuộc tính `data-i18n`, hỗ trợ lưu cấu hình ngôn ngữ trực tiếp trong LocalStorage và đồng bộ hóa prompt AI tương ứng theo mã ngôn ngữ (`lang`).</li>
+                <li><span class="highlight-purple">Sinh Logo SVG Tự Động Từ AI:</span> Tinh chỉnh prompts hệ thống của AI Design Agent để sinh khối code SVG sạch (viewBox 400x400) biểu diễn logo nón cách điệu phong cách Cyberpunk ở cuối phản hồi.</li>
+                <li><span class="highlight-purple">Tương Tác Tham Chiếu BST:</span> Cho phép người dùng click chọn trực tiếp một mẫu nón trong Bộ sưu tập cảm hứng để làm tham chiếu gốc cho AI khi thiết kế nón mới, có phím hủy tham chiếu rõ ràng.</li>
+                <li><span class="highlight-purple">Lưu Thiết Kế Vào BST:</span> Thêm nút "Lưu thiết kế vào BST" dưới khung chat bubble để người dùng lưu trực tiếp nón tự thiết kế kèm hình ảnh logo SVG chất lượng cao, an toàn tuyệt đối với CSDL gốc.</li>
+              </ul>
+            </div>
+          </div>
+
           <!-- Node v1.5.3 -->
           <div class="timeline-item">
             <div class="timeline-badge v153-badge" style="background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan);">v1.5.3</div>
@@ -506,40 +530,49 @@
   <div class="modal-overlay" id="settings-modal">
     <div class="modal-card settings-card">
       <button class="close-modal" id="close-settings-modal">&times;</button>
-      <h2>Cài Đặt Cấu Hình AI</h2>
-      <p class="subtitle">Nhập API Key lấy từ Google AI Studio để phân tích nón bằng AI (gemini-3.5-flash)</p>
+      <h2 data-i18n="settings_title">Cài Đặt Cấu Hình AI</h2>
+      <p class="subtitle" data-i18n="settings_subtitle">Nhập API Key lấy từ Google AI Studio để phân tích nón bằng AI (gemini-3.5-flash)</p>
       
       <!-- Hidden settings-mode for backward compatibility -->
       <select id="settings-mode" style="display: none;">
         <option value="gemini" selected>Gemini API Mode</option>
       </select>
 
+      <!-- Language Selection Section -->
+      <div class="form-group">
+        <label for="settings-lang-select" data-i18n="settings_lang_label">Ngôn ngữ giao diện</label>
+        <select id="settings-lang-select" style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; color: var(--text-main); font-family: 'Outfit', sans-serif;">
+          <option value="vi">Tiếng Việt</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+
       <div class="form-group" id="apikey-group">
-        <label for="apikey-input">Google Gemini API Key</label>
+        <label for="apikey-input" data-i18n="settings_apikey_label">Google Gemini API Key</label>
         <input type="password" id="apikey-input" placeholder="Nhập API Key của bạn (AIzaSy...)">
-        <span class="help-text">Nhận API Key miễn phí tại <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>. Khóa được lưu trực tiếp trên trình duyệt của bạn (local storage) và được đồng bộ bảo mật lên tài khoản cá nhân.</span>
+        <span class="help-text" data-i18n="settings_apikey_help">Nhận API Key miễn phí tại <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>. Khóa được lưu trực tiếp trên trình duyệt của bạn (local storage) và được đồng bộ bảo mật lên tài khoản cá nhân.</span>
       </div>
 
       <!-- Divider and Backup/Restore Section -->
       <hr class="divider" style="margin: 20px 0; border: none; height: 1px; background: var(--border-light);">
       <div class="backup-restore-section">
-        <label>Quản trị hệ thống (Backup & Restore)</label>
-        <p class="help-text" style="margin-bottom: 12px;">Sao lưu toàn bộ cơ sở dữ liệu hệ thống (Tài khoản + Bộ sưu tập) về máy tính hoặc nhập lại từ tệp đã lưu.</p>
+        <label data-i18n="settings_backup_label">Quản trị hệ thống (Backup & Restore)</label>
+        <p class="help-text" style="margin-bottom: 12px;" data-i18n="settings_backup_help">Sao lưu toàn bộ cơ sở dữ liệu hệ thống (Tài khoản + Bộ sưu tập) về máy tính hoặc nhập lại từ tệp đã lưu.</p>
         <div style="display: flex; gap: 10px;">
           <button class="outline-btn" id="db-backup-btn" style="flex: 1; min-height: 40px; justify-content: center; gap: 6px;">
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z" fill="currentColor"/></svg>
-            Tải Backup JSON
+            <span data-i18n="settings_backup_btn">Tải Backup JSON</span>
           </button>
           <button class="outline-btn" id="db-restore-trigger-btn" style="flex: 1; min-height: 40px; justify-content: center; gap: 6px;">
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v-4h-4v4H7l5 5 5-5h-3z" fill="currentColor"/></svg>
-            Phục hồi JSON
+            <span data-i18n="settings_restore_btn">Phục hồi JSON</span>
           </button>
           <input type="file" id="db-restore-file-input" accept=".json" style="display: none;">
         </div>
       </div>
 
       <div class="settings-actions" style="margin-top: 20px;">
-        <button class="cta-btn active" id="save-settings-btn">Lưu cấu hình</button>
+        <button class="cta-btn active" id="save-settings-btn" data-i18n="settings_save_btn">Lưu cấu hình</button>
       </div>
     </div>
   </div>

@@ -1044,7 +1044,7 @@ app.post('/api/user/settings', authMiddleware, (req, res) => {
 
 // POST /api/design-chat — Trò chuyện thiết kế nón với AI Design Agent
 app.post('/api/design-chat', authMiddleware, async (req, res) => {
-  const { prompt, collection } = req.body || {};
+  const { prompt, collection, lang, referenceItem } = req.body || {};
   const users = readDB('users');
   const user = users.find(u => u.id === req.user.userId);
   if (!user) {
@@ -1065,6 +1065,17 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
     ).join('\n');
   }
 
+  // Format specific reference item context if present
+  let referenceContext = '';
+  if (referenceItem) {
+    referenceContext = `Người dùng đang chọn thiết kế nón này làm gốc/mẫu tham chiếu chính:
+- Tiêu đề: "${referenceItem.title || 'Nón'}"
+- Nhà sáng tạo: ${referenceItem.creator || 'Streetwear'}
+- Phân loại: ${referenceItem.category || 'Chung'}
+- Tags: ${Array.isArray(referenceItem.tags) ? referenceItem.tags.join(', ') : ''}
+Hãy tập trung brainstorm và phát triển hoặc biến tấu thiết kế dựa trên nón này.`;
+  }
+
   // If no API key, return error
   if (!apiKey) {
     return res.status(400).json({ 
@@ -1075,11 +1086,91 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
 
   if (apiKey === 'MOCK_TEST_KEY_12345') {
     console.log('[Design Agent] success: true');
+    const mockReply = (lang === 'en')
+      ? '### 🎩 Concept: CyberNeon Cap-X\n\n**Design Description:**\nMock reply for testing.\n\n```xml\n<svg viewBox="0 0 400 400" width="400" height="400">\n  <rect width="400" height="400" fill="#0f0c1b"/>\n  <circle cx="200" cy="200" r="80" fill="#00f2fe"/>\n  <text x="200" y="340" fill="#ffffff" text-anchor="middle">CyberNeon Cap-X</text>\n</svg>\n```'
+      : '### 🎩 Concept: CyberNeon Cap-X\n\n**Mô tả thiết kế:**\nCâu trả lời giả lập để kiểm thử.\n\n```xml\n<svg viewBox="0 0 400 400" width="400" height="400">\n  <rect width="400" height="400" fill="#0f0c1b"/>\n  <circle cx="200" cy="200" r="80" fill="#00f2fe"/>\n  <text x="200" y="340" fill="#ffffff" text-anchor="middle">CyberNeon Cap-X</text>\n</svg>\n```';
     return res.json({ 
       success: true, 
-      reply: '### 🎩 Concept: CyberNeon Cap-X\n\n**Mô tả thiết kế:**\nMock reply for testing.' 
+      reply: mockReply
     });
   }
+
+  const outputLanguage = (lang === 'en') ? 'English' : 'Vietnamese';
+  const languageInstruction = (lang === 'en') 
+    ? `You must write the entire response in English (except any specialized fashion terms). Use professional, creative, and enthusiastic tone.`
+    : `Bạn phải viết toàn bộ câu trả lời bằng tiếng Việt (trừ prompt sinh ảnh AI viết bằng tiếng Anh). Sử dụng giọng văn chuyên nghiệp, sáng tạo và đầy nhiệt huyết.`;
+
+  const formatInstruction = (lang === 'en')
+    ? `Provide your response in a beautifully structured markdown format:
+
+### 🎩 Concept: [Concept Name]
+
+**Design Description:**
+[Detailed visual, structural, and aesthetic description of the hat design]
+
+**Logo Description:**
+[Detailed description of the logo designed for the hat]
+
+**Proposed Materials:**
+- [Material 1]
+- [Material 2]
+
+**Color Palette:**
+- Hex 1: #[HexCode]
+- Hex 2: #[HexCode]
+- Hex 3: #[HexCode]
+
+**Outfit Suggestions:**
+[Stylist suggestions on how to wear this hat]
+
+**AI Image Generation Prompt (Midjourney/DALL-E):**
+\`\`\`
+[Detailed English prompt for image generation]
+\`\`\`
+
+**SVG Logo Code:**
+At the very end of your response, write a clean XML/SVG code block representing the logo designed for this hat, wrapped in a \`\`\`xml or \`\`\`svg code block. The SVG must:
+- Have a viewBox of "0 0 400 400"
+- Have a dark gradient background (using <rect> and <linearGradient>)
+- Include a stylized, glowing cyberpunk hat shape or elements matching the design concept
+- Use <path>, <rect>, <circle>, <text>, <linearGradient>, etc. to create a detailed, modern design
+- Be self-contained, valid XML/SVG code with no external dependencies
+- Display the Concept Name using a <text> element near the bottom`
+    : `Cung cấp phản hồi của bạn dưới dạng cấu trúc markdown đẹp mắt như sau:
+
+### 🎩 Concept: [Concept Name]
+
+**Mô tả thiết kế:**
+[Mô tả chi tiết về kiểu dáng, cấu trúc và thẩm mỹ của nón bằng tiếng Việt]
+
+**Mô tả logo:**
+[Mô tả chi tiết về logo được thiết kế riêng cho nón bằng tiếng Việt]
+
+**Chất liệu đề xuất:**
+- [Material 1]
+- [Material 2]
+
+**Bảng màu chủ đạo:**
+- Hex 1: #[HexCode]
+- Hex 2: #[HexCode]
+- Hex 3: #[HexCode]
+
+**Gợi ý phối đồ:**
+[Gợi ý phối trang phục từ stylist bằng tiếng Việt]
+
+**Prompt sinh ảnh AI (Midjourney/DALL-E):**
+\`\`\`
+[Detailed English prompt for image generation]
+\`\`\`
+
+**Mã nguồn SVG Logo:**
+Ở cuối câu trả lời của bạn, hãy viết một khối mã XML/SVG sạch vẽ logo của nón này, bọc trong khối code \`\`\`xml hoặc \`\`\`svg. SVG phải:
+- Có viewBox="0 0 400 400"
+- Có hình nền tối với dải màu gradient (sử dụng <rect> và <linearGradient>)
+- Chứa hình dáng nón cyberpunk hoặc các yếu tố cách điệu, phát sáng phù hợp với concept
+- Sử dụng các thẻ <path>, <rect>, <circle>, <text>, <linearGradient>, v.v. để tạo thiết kế chi tiết, hiện đại
+- Là code XML/SVG hợp lệ, tự chạy, không phụ thuộc tài nguyên ngoài
+- Hiển thị tên Concept bằng thẻ <text> ở gần cạnh dưới của SVG`;
 
   try {
     console.log(`[Design Agent] Calling Gemini API for user: ${req.user.username}`);
@@ -1094,34 +1185,15 @@ app.post('/api/design-chat', authMiddleware, async (req, res) => {
                 The user has a collection of liked hats:
                 ${collectionContext}
                 
+                ${referenceContext}
+
                 The user's design idea or prompt is: "${prompt}".
                 
-                Help the user brainstorm and design a new hat concept based on their collection (as inspiration for their tastes) and their design idea.
-                Provide your response in Vietnamese in a beautifully structured markdown format:
+                Help the user brainstorm and design a new hat concept based on their collection (as inspiration for their tastes), their specific referenced hat if any, and their design idea.
                 
-                ### 🎩 Concept: [Concept Name]
+                ${languageInstruction}
                 
-                **Mô tả thiết kế:**
-                [Detailed visual, structural, and aesthetic description in Vietnamese]
-                
-                **Chất liệu đề xuất:**
-                - [Material 1]
-                - [Material 2]
-                
-                **Bảng màu chủ đạo:**
-                - Hex 1: #[HexCode]
-                - Hex 2: #[HexCode]
-                - Hex 3: #[HexCode]
-                
-                **Gợi ý phối đồ:**
-                [Stylist suggestions on how to wear this hat]
-                
-                **Prompt sinh ảnh AI (Midjourney/DALL-E):**
-                \`\`\`
-                [Detailed English prompt for image generation]
-                \`\`\`
-                
-                Keep the tone professional, creative, and enthusiastic. Ensure you respond in Vietnamese (except the English AI Image prompt).`
+                ${formatInstruction}`
               }
             ]
           }
