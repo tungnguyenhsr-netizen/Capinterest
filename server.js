@@ -1132,8 +1132,8 @@ Hãy tập trung brainstorm và phát triển hoặc biến tấu thiết kế d
 At the very end of your response, write a clean XML/SVG code block representing the logo designed for this hat, wrapped in a \`\`\`xml or \`\`\`svg code block. The SVG must:
 - Have a viewBox of "0 0 400 400"
 - Have a dark gradient background (using <rect> and <linearGradient>)
-- Include a stylized, glowing cyberpunk hat shape or elements matching the design concept
-- Use <path>, <rect>, <circle>, <text>, <linearGradient>, etc. to create a detailed, modern design
+- Represent ONLY the graphic logo/emblem design (e.g., a badge, symbol, abstract icon, or stylized letters) matching the concept. Do NOT draw the hat/cap outline, the visor, or any clothing/apparel elements.
+- Use <path>, <rect>, <circle>, <text>, <linearGradient>, etc. to create a detailed, modern, glowing cyberpunk emblem/logo.
 - Be self-contained, valid XML/SVG code with no external dependencies
 - Display the Concept Name using a <text> element near the bottom`
     : `Cung cấp phản hồi của bạn dưới dạng cấu trúc markdown đẹp mắt như sau:
@@ -1167,8 +1167,8 @@ At the very end of your response, write a clean XML/SVG code block representing 
 Ở cuối câu trả lời của bạn, hãy viết một khối mã XML/SVG sạch vẽ logo của nón này, bọc trong khối code \`\`\`xml hoặc \`\`\`svg. SVG phải:
 - Có viewBox="0 0 400 400"
 - Có hình nền tối với dải màu gradient (sử dụng <rect> và <linearGradient>)
-- Chứa hình dáng nón cyberpunk hoặc các yếu tố cách điệu, phát sáng phù hợp với concept
-- Sử dụng các thẻ <path>, <rect>, <circle>, <text>, <linearGradient>, v.v. để tạo thiết kế chi tiết, hiện đại
+- CHỈ biểu diễn thiết kế logo/biểu tượng đồ họa (ví dụ: huy hiệu, biểu tượng cách điệu, icon trừu tượng, hình học, hoặc các ký tự cách điệu) của nón. KHÔNG vẽ hình dáng nón, mũ, lưỡi trai hay bất kỳ yếu tố trang phục nào khác.
+- Sử dụng các thẻ <path>, <rect>, <circle>, <text>, <linearGradient>, v.v. để tạo thiết kế logo/biểu tượng hiện đại, phát sáng neon chi tiết.
 - Là code XML/SVG hợp lệ, tự chạy, không phụ thuộc tài nguyên ngoài
 - Hiển thị tên Concept bằng thẻ <text> ở gần cạnh dưới của SVG`;
 
