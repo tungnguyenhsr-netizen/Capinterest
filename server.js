@@ -1132,10 +1132,10 @@ Hãy tập trung brainstorm và phát triển hoặc biến tấu thiết kế d
 At the very end of your response, write a clean XML/SVG code block representing the logo designed for this hat, wrapped in a \`\`\`xml or \`\`\`svg code block. The SVG must:
 - Have a viewBox of "0 0 400 400"
 - Have a dark gradient background (using <rect> and <linearGradient>)
-- Represent ONLY the graphic logo/emblem design (e.g., a badge, symbol, abstract icon, or stylized letters) matching the concept. Do NOT draw the hat/cap outline, the visor, or any clothing/apparel elements.
+- Represent ONLY the graphic logo/emblem design (badge, shield, futuristic symbol, abstract icon, or stylized letters) labeled with the Concept Name using a <text> element.
+- **CRITICAL NEGATIVE CONSTRAINT: DO NOT DRAW ANY HAT OUTLINE, CAP CROWN, VISOR, BRIM, BEANIE OUTLINE, BUCKET HAT STRUCTURE, HELMET, OR CLOTHING/APPAREL ELEMENTS. THE SVG MUST CONTAIN ONLY THE VECTOR ARTWORK OF THE GRAPHIC LOGO/EMBLEM DESIGN AND ABSOLUTELY NO APPAREL STRUCTURES.**
 - Use <path>, <rect>, <circle>, <text>, <linearGradient>, etc. to create a detailed, modern, glowing cyberpunk emblem/logo.
-- Be self-contained, valid XML/SVG code with no external dependencies
-- Display the Concept Name using a <text> element near the bottom`
+- Be self-contained, valid XML/SVG code with no external dependencies`
     : `Cung cấp phản hồi của bạn dưới dạng cấu trúc markdown đẹp mắt như sau:
 
 ### 🎩 Concept: [Concept Name]
@@ -1167,10 +1167,10 @@ At the very end of your response, write a clean XML/SVG code block representing 
 Ở cuối câu trả lời của bạn, hãy viết một khối mã XML/SVG sạch vẽ logo của nón này, bọc trong khối code \`\`\`xml hoặc \`\`\`svg. SVG phải:
 - Có viewBox="0 0 400 400"
 - Có hình nền tối với dải màu gradient (sử dụng <rect> và <linearGradient>)
-- CHỈ biểu diễn thiết kế logo/biểu tượng đồ họa (ví dụ: huy hiệu, biểu tượng cách điệu, icon trừu tượng, hình học, hoặc các ký tự cách điệu) của nón. KHÔNG vẽ hình dáng nón, mũ, lưỡi trai hay bất kỳ yếu tố trang phục nào khác.
+- CHỈ biểu diễn thiết kế logo/biểu tượng đồ họa (huy hiệu, lá chắn/khiên bảo vệ, biểu tượng tương lai, icon trừu tượng, hoặc các chữ cái cách điệu) được dán nhãn tên Concept bằng cách sử dụng thẻ <text>.
+- **RÀNG BUỘC TIÊU CỰC QUAN TRỌNG: KHÔNG ĐƯỢC VẼ BẤT KỲ ĐƯỜNG VIỀN MŨ/NÓN NÀO, CHÓP MŨ, LƯỠI TRAI, VÀNH MŨ, ĐƯỜNG VIỀN MŨ LEN (BEANIE), CẤU TRÚC MŨ TAI BÈO (BUCKET), MŨ BẢO HIỂM, HOẶC CÁC YẾU TỐ QUẦN ÁO/TRANG PHỤC KHÁC. KHỐI MÃ SVG CHỈ ĐƯỢC CHỨA DUY NHẤT HÌNH VẼ VECTOR CỦA LOGO/BIỂU TƯỢNG ĐỒ HỌA VÀ TUYỆT ĐỐI KHÔNG CÓ CẤU TRÚC TRANG PHỤC NÀO.**
 - Sử dụng các thẻ <path>, <rect>, <circle>, <text>, <linearGradient>, v.v. để tạo thiết kế logo/biểu tượng hiện đại, phát sáng neon chi tiết.
-- Là code XML/SVG hợp lệ, tự chạy, không phụ thuộc tài nguyên ngoài
-- Hiển thị tên Concept bằng thẻ <text> ở gần cạnh dưới của SVG`;
+- Là code XML/SVG hợp lệ, tự chạy, không phụ thuộc tài nguyên ngoài`;
 
   try {
     console.log(`[Design Agent] Calling Gemini API for user: ${req.user.username}`);
@@ -1190,6 +1190,8 @@ At the very end of your response, write a clean XML/SVG code block representing 
                 The user's design idea or prompt is: "${prompt}".
                 
                 Help the user brainstorm and design a new hat concept based on their collection (as inspiration for their tastes), their specific referenced hat if any, and their design idea.
+                
+                CRITICAL RULE: The SVG block at the end of the response must strictly contain only the logo vector artwork (e.g. badge, shield, futuristic symbol, abstract icon, or stylized letters) labeled with the Concept Name using a <text> element, and absolutely no apparel structures (such as hat outlines, cap crowns, visors, brims, beanie outlines, bucket hat structures, helmets, or clothing elements).
                 
                 ${languageInstruction}
                 

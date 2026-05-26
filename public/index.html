@@ -51,7 +51,7 @@
         <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18">
           <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
         </svg>
-        <input type="text" id="search-input" placeholder="Tìm kiếm nón, mũ thời trang (Ví dụ: cyberpunk, vintage dad hat, bucket...)" autocomplete="off">
+        <input type="text" id="search-input" data-i18n-placeholder="search_placeholder" placeholder="Tìm kiếm nón, mũ thời trang (Ví dụ: cyberpunk, vintage dad hat, bucket...)" autocomplete="off">
         <button id="search-clear-btn" class="clear-btn" style="display:none;">&times;</button>
       </div>
       
@@ -74,7 +74,7 @@
           <svg viewBox="0 0 24 24" width="18" height="18"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" fill="currentColor"/></svg>
           <span data-i18n="nav_changelog">Nhật ký</span>
         </button>
-        <button class="nav-btn accent-btn" id="add-link-btn" title="Thêm nón bằng link ảnh">
+        <button class="nav-btn accent-btn" id="add-link-btn" data-i18n-title="title_add_link" title="Thêm nón bằng link ảnh">
           <svg viewBox="0 0 24 24" width="18" height="18"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>
           <span data-i18n="nav_add_link">Dán link nón</span>
         </button>
@@ -84,7 +84,7 @@
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/></svg>
           </span>
           <span id="user-username">Username</span>
-          <button class="logout-icon-btn" id="logout-btn" title="Đăng xuất">
+          <button class="logout-icon-btn" id="logout-btn" data-i18n-title="title_logout" title="Đăng xuất">
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor"/></svg>
           </button>
         </div>
@@ -92,7 +92,7 @@
           <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="currentColor"/></svg>
           <span data-i18n="nav_login">Đăng nhập</span>
         </button>
-        <button class="icon-btn" id="settings-btn" title="Cấu hình API Key">
+        <button class="icon-btn" id="settings-btn" data-i18n-title="title_settings" title="Cấu hình API Key">
           <svg viewBox="0 0 24 24" width="20" height="20"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/></svg>
         </button>
       </div>
@@ -117,7 +117,7 @@
         <!-- Status indicator (Scraping indicator) -->
         <div id="scrape-status" class="status-indicator" style="display:none;">
           <div class="spinner"></div>
-          <span id="scrape-status-text">Đang cào ảnh nón mới từ web...</span>
+          <span id="scrape-status-text" data-i18n="status_scraping">Đang cào ảnh nón mới từ web...</span>
         </div>
         
         <!-- Masonry Grid -->
@@ -130,12 +130,12 @@
         <!-- Infinite scroll loading spinner -->
         <div id="infinite-loading" style="display: none; justify-content: center; align-items: center; padding: 20px 0; margin-top: 20px;">
           <div class="spinner" style="border: 3px solid rgba(0, 242, 254, 0.1); border-top: 3px solid var(--accent-cyan); width: 24px; height: 24px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-          <span style="margin-left: 10px; font-size: 0.9rem; color: var(--text-muted); letter-spacing: 1px;">Đang tải thêm nón...</span>
+          <span style="margin-left: 10px; font-size: 0.9rem; color: var(--text-muted); letter-spacing: 1px;" data-i18n="feed_loading">Đang tải thêm nón...</span>
         </div>
 
         <div id="empty-state" class="empty-state" style="display:none;">
           <svg viewBox="0 0 24 24" width="64" height="64"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z" fill="currentColor"/></svg>
-          <p>Không tìm thấy mẫu nón nào. Hãy thử tìm kiếm từ khóa khác!</p>
+          <p data-i18n="feed_empty">Không tìm thấy mẫu nón nào. Hãy thử tìm kiếm từ khóa khác!</p>
         </div>
       </section>
 
@@ -152,7 +152,7 @@
             <span class="collection-count" id="collection-count">0 <span data-i18n="coll_count">mẫu nón</span></span>
           </div>
           <p class="collection-subtitle" data-i18n="coll_subtitle">Các mẫu nón bạn đã lưu lại. Nhấn vào ảnh để xem chi tiết hoặc phân tích bằng AI.</p>
-          <button class="outline-btn" id="clear-collection-btn" style="display:none;">Xóa tất cả</button>
+          <button class="outline-btn" id="clear-collection-btn" style="display:none;" data-i18n="coll_clear_btn">Xóa tất cả</button>
         </div>
         
         <div class="masonry-wrapper">
@@ -163,7 +163,7 @@
 
         <div id="collection-empty" class="empty-state">
           <svg viewBox="0 0 24 24" width="64" height="64"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z" fill="currentColor"/></svg>
-          <p>Chưa có nón nào trong bộ sưu tập. Hãy nhấn nút <strong>♡</strong> trên các mẫu nón ở Bản tin để lưu lại!</p>
+          <p data-i18n="coll_empty">Chưa có nón nào trong bộ sưu tập. Hãy nhấn nút <strong>♡</strong> trên các mẫu nón ở Bản tin để lưu lại!</p>
         </div>
       </section>
 
@@ -315,9 +315,9 @@
               <div class="chat-messages" id="agent-chat-messages">
                 <div class="message system-msg">
                   <div class="msg-bubble">
-                    🎩 <strong>AI Design Agent:</strong> Chào bạn! Tôi là Trợ lý Thiết kế AI của CapInterest. Tôi đã đọc bộ sưu tập nón bạn đã thích để thấu hiểu gu thời trang của bạn. 
+                    🎩 <strong>AI Design Agent:</strong> <span data-i18n="agent_welcome_msg">Chào bạn! Tôi là Trợ lý Thiết kế AI của CapInterest. Tôi đã đọc bộ sưu tập nón bạn đã thích để thấu hiểu gu thời trang của bạn. 
                     <br><br>
-                    Hãy đưa ra ý tưởng thiết kế nón của bạn (Ví dụ: <em>"Mix nón Beanie phong cách Techwear với logo phát quang neon"</em> hoặc <em>"Tạo một nón bucket vải nhung corduroy màu nâu phối viền cam neon"</em>), tôi sẽ thiết kế bản vẽ chi tiết và tạo prompt vẽ ảnh AI cho bạn!
+                    Hãy đưa ra ý tưởng thiết kế nón của bạn (Ví dụ: <em>"Mix nón Beanie phong cách Techwear với logo phát quang neon"</em> hoặc <em>"Tạo một nón bucket vải nhung corduroy màu nâu phối viền cam neon"</em>), tôi sẽ thiết kế bản vẽ chi tiết và tạo prompt vẽ ảnh AI cho bạn!</span>
                   </div>
                 </div>
               </div>
@@ -330,7 +330,7 @@
                   <button id="chat-reference-clear" style="background: none; border: none; color: var(--accent-pink); font-size: 1.1rem; cursor: pointer; padding: 0 4px; line-height: 1;">&times;</button>
                 </div>
                 <div style="display: flex; gap: 10px; width: 100%;">
-                  <textarea id="agent-chat-input" placeholder="Mô tả ý tưởng thiết kế nón của bạn ở đây... (Ấn Enter để gửi, Shift+Enter xuống dòng)" style="flex: 1;"></textarea>
+                  <textarea id="agent-chat-input" data-i18n-placeholder="agent_input_placeholder" placeholder="Mô tả ý tưởng thiết kế nón của bạn ở đây... (Ấn Enter để gửi, Shift+Enter xuống dòng)" style="flex: 1;"></textarea>
                   <button class="cta-btn active" id="agent-send-btn" data-i18n="agent_btn_send">Gửi ý tưởng</button>
                 </div>
               </div>
@@ -346,9 +346,9 @@
             <svg viewBox="0 0 24 24" width="24" height="24" style="vertical-align:middle;margin-right:8px;color:var(--accent-cyan);">
               <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" fill="currentColor"/>
             </svg>
-            Nhật Ký Cập Nhật (Changelog)
+            <span data-i18n="changelog_title">Nhật Ký Cập Nhật (Changelog)</span>
           </h2>
-          <p class="changelog-subtitle">Lịch sử phát triển và nâng cấp hệ thống CapInterest phong cách Cyberpunk</p>
+          <p class="changelog-subtitle" data-i18n="changelog_subtitle">Lịch sử phát triển và nâng cấp hệ thống CapInterest phong cách Cyberpunk</p>
         </div>
 
         <div class="timeline-container">
@@ -358,13 +358,13 @@
           <div class="timeline-item">
             <div class="timeline-badge v160-badge" style="background: var(--accent-purple); box-shadow: 0 0 10px var(--accent-purple);">v1.6.0</div>
             <div class="timeline-card">
-              <span class="timeline-date">23 Tháng 5, 2026</span>
-              <h3>🌐 Hỗ Trợ Đa Ngôn Ngữ & Thiết Kế Logo SVG Tự Động Từ AI Design Agent</h3>
+              <span class="timeline-date" data-i18n="changelog_date_v160">23 Tháng 5, 2026</span>
+              <h3 data-i18n="changelog_title_v160">🌐 Hỗ Trợ Đa Ngôn Ngữ & Thiết Kế Logo SVG Tự Động Từ AI Design Agent</h3>
               <ul class="timeline-list">
-                <li><span class="highlight-purple">Hỗ Trợ Song Ngữ (VI/EN):</span> Tích hợp cấu trúc dịch tự động toàn bộ giao diện dựa trên thuộc tính `data-i18n`, hỗ trợ lưu cấu hình ngôn ngữ trực tiếp trong LocalStorage và đồng bộ hóa prompt AI tương ứng theo mã ngôn ngữ (`lang`).</li>
-                <li><span class="highlight-purple">Sinh Logo SVG Tự Động Từ AI:</span> Tinh chỉnh prompts hệ thống của AI Design Agent để sinh khối code SVG sạch (viewBox 400x400) biểu diễn logo nón cách điệu phong cách Cyberpunk ở cuối phản hồi.</li>
-                <li><span class="highlight-purple">Tương Tác Tham Chiếu BST:</span> Cho phép người dùng click chọn trực tiếp một mẫu nón trong Bộ sưu tập cảm hứng để làm tham chiếu gốc cho AI khi thiết kế nón mới, có phím hủy tham chiếu rõ ràng.</li>
-                <li><span class="highlight-purple">Lưu Thiết Kế Vào BST:</span> Thêm nút "Lưu thiết kế vào BST" dưới khung chat bubble để người dùng lưu trực tiếp nón tự thiết kế kèm hình ảnh logo SVG chất lượng cao, an toàn tuyệt đối với CSDL gốc.</li>
+                <li data-i18n="changelog_li1_v160"><span class="highlight-purple">Hỗ Trợ Song Ngữ (VI/EN):</span> Tích hợp cấu trúc dịch tự động toàn bộ giao diện dựa trên thuộc tính `data-i18n`, hỗ trợ lưu cấu hình ngôn ngữ trực tiếp trong LocalStorage và đồng bộ hóa prompt AI tương ứng theo mã ngôn ngữ (`lang`).</li>
+                <li data-i18n="changelog_li2_v160"><span class="highlight-purple">Sinh Logo SVG Tự Động Từ AI:</span> Tinh chỉnh prompts hệ thống của AI Design Agent để sinh khối code SVG sạch (viewBox 400x400) biểu diễn logo nón cách điệu phong cách Cyberpunk ở cuối phản hồi.</li>
+                <li data-i18n="changelog_li3_v160"><span class="highlight-purple">Tương Tác Tham Chiếu BST:</span> Cho phép người dùng click chọn trực tiếp một mẫu nón trong Bộ sưu tập cảm hứng để làm tham chiếu gốc cho AI khi thiết kế nón mới, có phím hủy tham chiếu rõ ràng.</li>
+                <li data-i18n="changelog_li4_v160"><span class="highlight-purple">Lưu Thiết Kế Vào BST:</span> Thêm nút "Lưu thiết kế vào BST" dưới khung chat bubble để người dùng lưu trực tiếp nón tự thiết kế kèm hình ảnh logo SVG chất lượng cao, an toàn tuyệt đối với CSDL gốc.</li>
               </ul>
             </div>
           </div>
@@ -373,12 +373,12 @@
           <div class="timeline-item">
             <div class="timeline-badge v153-badge" style="background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan);">v1.5.3</div>
             <div class="timeline-card">
-              <span class="timeline-date">22 Tháng 5, 2026</span>
-              <h3>🎨 Tinh Chỉnh UI/UX & Tối Ưu Hóa Hiệu Năng Hệ Thống</h3>
+              <span class="timeline-date" data-i18n="changelog_date_v153">22 Tháng 5, 2026</span>
+              <h3 data-i18n="changelog_title_v153">🎨 Tinh Chỉnh UI/UX & Tối Ưu Hóa Hiệu Năng Hệ Thống</h3>
               <ul class="timeline-list">
-                <li><span class="highlight-cyan">Sửa Lỗi Giao Diện & Di Động:</span> Khắc phục triệt để lỗi squashed sidebar tại AI Lab, căn chỉnh header tránh tràn viền trên tablet (768px - 1024px), và tối ưu hóa chiều cao Mobile Nav Bar cùng các vùng an toàn (safe-area-inset-bottom) của container chính, banner đồng bộ, và thông báo toast để tránh đè lấp phím điều hướng trên thiết bị có notch.</li>
-                <li><span class="highlight-cyan">Hiệu ứng Cyberpunk:</span> Nâng cấp hiệu ứng chuyển động, neon hover glow cho card nón và các nút chức năng, tích hợp hoạt ảnh glitch độc đáo cho logo.</li>
-                <li><span class="highlight-cyan">Tối Ưu Hóa Hiệu Năng Client-side:</span> Bổ sung debounce 500ms cho ô tìm kiếm, tích hợp cơ chế cache API /api/scrape vào sessionStorage để giảm tải DB và Serper API, đồng thời tự động dừng polling khi tab trình duyệt không hoạt động.</li>
+                <li data-i18n="changelog_li1_v153"><span class="highlight-cyan">Sửa Lỗi Giao Diện & Di Động:</span> Khắc phục triệt để lỗi squashed sidebar tại AI Lab, căn chỉnh header tránh tràn viền trên tablet (768px - 1024px), và tối ưu hóa chiều cao Mobile Nav Bar cùng các vùng an toàn (safe-area-inset-bottom) của container chính, banner đồng bộ, và thông báo toast để tránh đè lấp phím điều hướng trên thiết bị có notch.</li>
+                <li data-i18n="changelog_li2_v153"><span class="highlight-cyan">Hiệu ứng Cyberpunk:</span> Nâng cấp hiệu ứng chuyển động, neon hover glow cho card nón và các nút chức năng, tích hợp hoạt ảnh glitch độc đáo cho logo.</li>
+                <li data-i18n="changelog_li3_v153"><span class="highlight-cyan">Tối Ưu Hóa Hiệu Năng Client-side:</span> Bổ sung debounce 500ms cho ô tìm kiếm, tích hợp cơ chế cache API /api/scrape vào sessionStorage để giảm tải DB và Serper API, đồng thời tự động dừng polling khi tab trình duyệt không hoạt động.</li>
               </ul>
             </div>
           </div>
@@ -387,12 +387,12 @@
           <div class="timeline-item">
             <div class="timeline-badge v152-badge" style="background: var(--accent-pink); box-shadow: 0 0 10px var(--accent-pink);">v1.5.2</div>
             <div class="timeline-card">
-              <span class="timeline-date">22 Tháng 5, 2026</span>
-              <h3>⚙️ Đồng Nhất Cấu Hình Google AI Studio (Bỏ Chế Độ Demo)</h3>
+              <span class="timeline-date" data-i18n="changelog_date_v152">22 Tháng 5, 2026</span>
+              <h3 data-i18n="changelog_title_v152">⚙️ Đồng Nhất Cấu Hình Google AI Studio (Bỏ Chế Độ Demo)</h3>
               <ul class="timeline-list">
-                <li><span class="highlight-pink">Bỏ Hoàn Toàn Demo Mode:</span> Gỡ bỏ toàn bộ code sinh dữ liệu giả lập (mock response) trên Backend. Khi cấu hình sai hoặc thiếu API Key, hệ thống sẽ trả trực tiếp thông tin lỗi chi tiết về giao diện người dùng.</li>
-                <li><span class="highlight-pink">Giao Diện Settings Tinh Gọn:</span> Ẩn menu chọn chế độ AI Mode, mặc định chuyển toàn bộ hệ thống sang sử dụng Google AI Studio (Gemini API) với API Key của người dùng.</li>
-                <li><span class="highlight-pink">Tự Động Di Trú (Auto-Migration):</span> Hệ thống tự động chuyển đổi cấu hình cũ từ 'demo' sang 'gemini' trên máy khách để tránh các lỗi không tương thích.</li>
+                <li data-i18n="changelog_li1_v152"><span class="highlight-pink">Bỏ Hoàn Toàn Demo Mode:</span> Gỡ bỏ toàn bộ code sinh dữ liệu giả lập (mock response) trên Backend. Khi cấu hình sai hoặc thiếu API Key, hệ thống sẽ trả trực tiếp thông tin lỗi chi tiết về giao diện người dùng.</li>
+                <li data-i18n="changelog_li2_v152"><span class="highlight-pink">Giao Diện Settings Tinh Gọn:</span> Ẩn menu chọn chế độ AI Mode, mặc định chuyển toàn bộ hệ thống sang sử dụng Google AI Studio (Gemini API) với API Key của người dùng.</li>
+                <li data-i18n="changelog_li3_v152"><span class="highlight-pink">Tự Động Di Trú (Auto-Migration):</span> Hệ thống tự động chuyển đổi cấu hình cũ từ 'demo' sang 'gemini' trên máy khách để tránh các lỗi không tương thích.</li>
               </ul>
             </div>
           </div>
@@ -401,12 +401,12 @@
           <div class="timeline-item">
             <div class="timeline-badge v150-badge">v1.5.1</div>
             <div class="timeline-card">
-              <span class="timeline-date">22 Tháng 5, 2026</span>
-              <h3>🤖 Kết Nối Gemini 3.5 Flash & Sửa Lỗi Giao Diện</h3>
+              <span class="timeline-date" data-i18n="changelog_date_v151">22 Tháng 5, 2026</span>
+              <h3 data-i18n="changelog_title_v151">🤖 Kết Nối Gemini 3.5 Flash & Sửa Lỗi Giao Diện</h3>
               <ul class="timeline-list">
-                <li><span class="highlight-cyan">AI Design Agent Direct API:</span> Chạy trực tiếp qua model Gemini 3.5 Flash và endpoint v1beta bằng API Key của người dùng, loại bỏ chế độ mô phỏng demo.</li>
-                <li><span class="highlight-cyan">Minh Bạch Lỗi Kết Nối:</span> Loại bỏ fallback âm thầm khi API Key lỗi hoặc lỗi mạng; thông báo chi tiết lỗi Google API trực tiếp vào giao diện chat để người dùng tiện kiểm tra.</li>
-                <li><span class="highlight-cyan">UI Bộ Sưu Tập Bền Bỉ (Resilient):</span> Thay đổi cơ chế ẩn/xóa card nón khi ảnh lỗi bằng ảnh placeholder nón mặc định, giữ cho giao diện hiển thị bộ sưu tập không bị lỗi mất card do Render xóa đĩa tạm.</li>
+                <li data-i18n="changelog_li1_v151"><span class="highlight-cyan">AI Design Agent Direct API:</span> Chạy trực tiếp qua model Gemini 3.5 Flash và endpoint v1beta bằng API Key của người dùng, loại bỏ chế độ mô phỏng demo.</li>
+                <li data-i18n="changelog_li2_v151"><span class="highlight-cyan">Minh Bạch Lỗi Kết Nối:</span> Loại bỏ fallback âm thầm khi API Key lỗi hoặc lỗi mạng; thông báo chi tiết lỗi Google API trực tiếp vào giao diện chat để người dùng tiện kiểm tra.</li>
+                <li data-i18n="changelog_li3_v151"><span class="highlight-cyan">UI Bộ Sưu Tập Bền Bỉ (Resilient):</span> Thay đổi cơ chế ẩn/xóa card nón khi ảnh lỗi bằng ảnh placeholder nón mặc định, giữ cho giao diện hiển thị bộ sưu tập không bị lỗi mất card do Render xóa đĩa tạm.</li>
               </ul>
             </div>
           </div>
@@ -415,13 +415,13 @@
           <div class="timeline-item">
             <div class="timeline-badge v140-badge">v1.4.0</div>
             <div class="timeline-card">
-              <span class="timeline-date">21 Tháng 5, 2026</span>
-              <h3>💾 CSDL Chung & Lưu Trữ Đám Mây / Drive Fallback</h3>
+              <span class="timeline-date" data-i18n="changelog_date_v140">21 Tháng 5, 2026</span>
+              <h3 data-i18n="changelog_title_v140">💾 CSDL Chung & Lưu Trữ Đám Mây / Drive Fallback</h3>
               <ul class="timeline-list">
-                <li><span class="highlight-cyan">Shared Caching DB:</span> Lưu trữ và chia sẻ các mẫu nón tự dán link hiển thị lên bản tin chung cho tất cả người dùng khác.</li>
-                <li><span class="highlight-cyan">Google Drive Storage:</span> Hỗ trợ tải & lưu trữ hình ảnh nón lên Google Drive bằng tài khoản dịch vụ (Service Account).</li>
-                <li><span class="highlight-cyan">Fail-safe Local Fallback:</span> Tự động chuyển lưu cục bộ tại thư mục public/uploads/ nếu Google Drive API gặp sự cố.</li>
-                <li><span class="highlight-cyan">Serper Credit Limiter:</span> Kiểm soát giới hạn API tìm kiếm Serper (30 lượt/ngày) để tối ưu hóa credits và tự động tìm kiếm kết hợp trên cache.</li>
+                <li data-i18n="changelog_li1_v140"><span class="highlight-cyan">Shared Caching DB:</span> Lưu trữ và chia sẻ các mẫu nón tự dán link hiển thị lên bản tin chung cho tất cả người dùng khác.</li>
+                <li data-i18n="changelog_li2_v140"><span class="highlight-cyan">Google Drive Storage:</span> Hỗ trợ tải & lưu trữ hình ảnh nón lên Google Drive bằng tài khoản dịch vụ (Service Account).</li>
+                <li data-i18n="changelog_li3_v140"><span class="highlight-cyan">Fail-safe Local Fallback:</span> Tự động chuyển lưu cục bộ tại thư mục public/uploads/ nếu Google Drive API gặp sự cố.</li>
+                <li data-i18n="changelog_li4_v140"><span class="highlight-cyan">Serper Credit Limiter:</span> Kiểm soát giới hạn API tìm kiếm Serper (30 lượt/ngày) để tối ưu hóa credits và tự động tìm kiếm kết hợp trên cache.</li>
               </ul>
             </div>
           </div>
@@ -430,13 +430,13 @@
           <div class="timeline-item">
             <div class="timeline-badge v130-badge">v1.3.0</div>
             <div class="timeline-card">
-              <span class="timeline-date">21 Tháng 5, 2026</span>
-              <h3>🔥 Trợ Lý AI Thiết Kế & Đồng Bộ Real-time</h3>
+              <span class="timeline-date" data-i18n="changelog_date_v130">21 Tháng 5, 2026</span>
+              <h3 data-i18n="changelog_title_v130">🔥 Trợ Lý AI Thiết Kế & Đồng Bộ Real-time</h3>
               <ul class="timeline-list">
-                <li><span class="highlight-cyan">AI Design Agent:</span> Tích hợp chatbot thời trang, tự động đọc gu thẩm mỹ từ bộ sưu tập của bạn để gợi ý ý tưởng và viết prompt vẽ ảnh Midjourney/DALL-E.</li>
-                <li><span class="highlight-cyan">Real-time Polling Sync:</span> Đồng bộ hóa bộ sưu tập lập tức qua nền hệ thống, không cần reload lại trang khi thích/bỏ thích trên thiết bị khác.</li>
-                <li><span class="highlight-cyan">Backup & Restore JSON:</span> Thêm chức năng xuất và nhập cơ sở dữ liệu hệ thống trực tiếp trong cài đặt.</li>
-                <li><span class="highlight-cyan">Cyberpunk Branding:</span> Cập nhật Logo và Favicon phong cách nón Neon Cyberpunk độc quyền.</li>
+                <li data-i18n="changelog_li1_v130"><span class="highlight-cyan">AI Design Agent:</span> Tích hợp chatbot thời trang, tự động đọc gu thẩm mỹ từ bộ sưu tập của bạn để gợi ý ý tưởng và viết prompt vẽ ảnh Midjourney/DALL-E.</li>
+                <li data-i18n="changelog_li2_v130"><span class="highlight-cyan">Real-time Polling Sync:</span> Đồng bộ hóa bộ sưu tập lập tức qua nền hệ thống, không cần reload lại trang khi thích/bỏ thích trên thiết bị khác.</li>
+                <li data-i18n="changelog_li3_v130"><span class="highlight-cyan">Backup & Restore JSON:</span> Thêm chức năng xuất và nhập cơ sở dữ liệu hệ thống trực tiếp trong cài đặt.</li>
+                <li data-i18n="changelog_li4_v130"><span class="highlight-cyan">Cyberpunk Branding:</span> Cập nhật Logo và Favicon phong cách nón Neon Cyberpunk độc quyền.</li>
               </ul>
             </div>
           </div>
@@ -445,12 +445,12 @@
           <div class="timeline-item">
             <div class="timeline-badge v120-badge">v1.2.0</div>
             <div class="timeline-card">
-              <span class="timeline-date">20 Tháng 5, 2026</span>
-              <h3>🛡️ API Key Riêng Tư & Fail-safe Dự Phòng</h3>
+              <span class="timeline-date" data-i18n="changelog_date_v120">20 Tháng 5, 2026</span>
+              <h3 data-i18n="changelog_title_v120">🛡️ API Key Riêng Tư & Fail-safe Dự Phòng</h3>
               <ul class="timeline-list">
-                <li><span class="highlight-pink">Lưu AI Key Theo Tài Khoản:</span> Cho phép người dùng nhập và lưu trữ Gemini API Key cá nhân đồng bộ trên đám mây.</li>
-                <li><span class="highlight-pink">Client-side Fail-safe:</span> Tự động tạo bản sao lưu cục bộ (mirror) và đẩy ngược lên server khi Render tự xóa dữ liệu tạm thời.</li>
-                <li><span class="highlight-pink">Popup Viewport Fix:</span> Tối ưu khung chi tiết nón, ngăn tràn viền trên Safari iPhone 12 Pro Max.</li>
+                <li data-i18n="changelog_li1_v120"><span class="highlight-pink">Lưu AI Key Theo Tài Khoản:</span> Cho phép người dùng nhập và lưu trữ Gemini API Key cá nhân đồng bộ trên đám mây.</li>
+                <li data-i18n="changelog_li2_v120"><span class="highlight-pink">Client-side Fail-safe:</span> Tự động tạo bản sao lưu cục bộ (mirror) và đẩy ngược lên server khi Render tự xóa dữ liệu tạm thời.</li>
+                <li data-i18n="changelog_li3_v120"><span class="highlight-pink">Popup Viewport Fix:</span> Tối ưu khung chi tiết nón, ngăn tràn viền trên Safari iPhone 12 Pro Max.</li>
               </ul>
             </div>
           </div>
@@ -459,12 +459,12 @@
           <div class="timeline-item">
             <div class="timeline-badge">v1.1.0</div>
             <div class="timeline-card">
-              <span class="timeline-date">19 Tháng 5, 2026</span>
-              <h3>📱 Mobile Responsive & Account System</h3>
+              <span class="timeline-date" data-i18n="changelog_date_v110">19 Tháng 5, 2026</span>
+              <h3 data-i18n="changelog_title_v110">📱 Mobile Responsive & Account System</h3>
               <ul class="timeline-list">
-                <li><span class="highlight-cyan">Authentication:</span> Hệ thống Đăng nhập / Đăng ký dùng JWT Token và mã hóa mật khẩu phía server.</li>
-                <li><span class="highlight-cyan">Mobile Bottom Bar:</span> Thanh điều hướng phong cách ứng dụng di động sang xịn mịn ở dưới cùng màn hình.</li>
-                <li><span class="highlight-cyan">Responsive Masonry:</span> Grid co giãn tối ưu, tự động chuyển về 2 cột trên điện thoại mà vẫn giữ tỷ lệ ảnh gốc.</li>
+                <li data-i18n="changelog_li1_v110"><span class="highlight-cyan">Authentication:</span> Hệ thống Đăng nhập / Đăng ký dùng JWT Token và mã hóa mật khẩu phía server.</li>
+                <li data-i18n="changelog_li2_v110"><span class="highlight-cyan">Mobile Bottom Bar:</span> Thanh điều hướng phong cách ứng dụng di động sang xịn mịn ở dưới cùng màn hình.</li>
+                <li data-i18n="changelog_li3_v110"><span class="highlight-cyan">Responsive Masonry:</span> Grid co giãn tối ưu, tự động chuyển về 2 cột trên điện thoại mà vẫn giữ tỷ lệ ảnh gốc.</li>
               </ul>
             </div>
           </div>
@@ -473,11 +473,11 @@
           <div class="timeline-item">
             <div class="timeline-badge">v1.0.0</div>
             <div class="timeline-card">
-              <span class="timeline-date">18 Tháng 5, 2026</span>
-              <h3>🚀 Khởi Chạy CapInterest</h3>
+              <span class="timeline-date" data-i18n="changelog_date_v100">18 Tháng 5, 2026</span>
+              <h3 data-i18n="changelog_title_v100">🚀 Khởi Chạy CapInterest</h3>
               <ul class="timeline-list">
-                <li><span class="highlight-purple">Pinterest Feed:</span> Thu thập hình ảnh nón mũ thời trang trực tuyến thông qua công cụ tìm kiếm và cào dữ liệu.</li>
-                <li><span class="highlight-purple">AI Scanner:</span> Máy quét tia laser thông minh, phân tích chất liệu, kiểu dáng nón và chấm điểm xu hướng nón.</li>
+                <li data-i18n="changelog_li1_v100"><span class="highlight-purple">Pinterest Feed:</span> Thu thập hình ảnh nón mũ thời trang trực tuyến thông qua công cụ tìm kiếm và cào dữ liệu.</li>
+                <li data-i18n="changelog_li2_v100"><span class="highlight-purple">AI Scanner:</span> Máy quét tia laser thông minh, phân tích chất liệu, kiểu dáng nón và chấm điểm xu hướng nón.</li>
               </ul>
             </div>
           </div>
@@ -549,7 +549,7 @@
 
       <div class="form-group" id="apikey-group">
         <label for="apikey-input" data-i18n="settings_apikey_label">Google Gemini API Key</label>
-        <input type="password" id="apikey-input" placeholder="Nhập API Key của bạn (AIzaSy...)">
+        <input type="password" id="apikey-input" data-i18n-placeholder="settings_apikey_placeholder" placeholder="Nhập API Key của bạn (AIzaSy...)">
         <span class="help-text" data-i18n="settings_apikey_help">Nhận API Key miễn phí tại <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>. Khóa được lưu trực tiếp trên trình duyệt của bạn (local storage) và được đồng bộ bảo mật lên tài khoản cá nhân.</span>
       </div>
 
@@ -587,7 +587,7 @@
       <div class="form-group">
         <label for="add-url-input" data-i18n="add_label_url">Liên kết hình ảnh (Image URL) <span style="color:var(--accent-cyan)">*</span></label>
         <div style="display: flex; gap: 8px;">
-          <input type="url" id="add-url-input" placeholder="Dán link Pinterest, Unsplash hoặc link ảnh..." required style="flex: 1;">
+          <input type="url" id="add-url-input" data-i18n-placeholder="add_placeholder_url" placeholder="Dán link Pinterest, Unsplash hoặc link ảnh..." required style="flex: 1;">
           <button class="cta-btn active" id="resolve-url-btn" style="padding: 0 15px; margin: 0; min-height: 40px; font-size: 0.85rem; white-space: nowrap;" data-i18n="add_btn_resolve">Tự động lấy ảnh</button>
         </div>
         <span class="help-text" id="resolve-status" style="margin-top: 5px; display: none;"></span>
@@ -598,12 +598,12 @@
 
       <div class="form-group">
         <label for="add-title-input" data-i18n="add_label_title">Tên nón (Tiêu đề thiết kế)</label>
-        <input type="text" id="add-title-input" placeholder="Ví dụ: Nón Snapback Đen Retro">
+        <input type="text" id="add-title-input" data-i18n-placeholder="add_placeholder_title" placeholder="Ví dụ: Nón Snapback Đen Retro">
       </div>
 
       <div class="form-group">
         <label for="add-creator-input" data-i18n="add_label_creator">Nhà thiết kế / Nguồn ảnh</label>
-        <input type="text" id="add-creator-input" placeholder="Ví dụ: pinterest_user">
+        <input type="text" id="add-creator-input" data-i18n-placeholder="add_placeholder_creator" placeholder="Ví dụ: pinterest_user">
       </div>
 
       <div class="form-group">
@@ -638,11 +638,11 @@
       <form id="login-form" class="auth-form active">
         <div class="form-group">
           <label for="login-username" data-i18n="auth_label_username">Tên đăng nhập</label>
-          <input type="text" id="login-username" placeholder="Nhập tên đăng nhập..." required autocomplete="username">
+          <input type="text" id="login-username" data-i18n-placeholder="auth_placeholder_username" placeholder="Nhập tên đăng nhập..." required autocomplete="username">
         </div>
         <div class="form-group">
           <label for="login-password" data-i18n="auth_label_password">Mật khẩu</label>
-          <input type="password" id="login-password" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
+          <input type="password" id="login-password" data-i18n-placeholder="auth_placeholder_password" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
         </div>
         <span class="auth-error" id="login-error" style="display:none;">Lỗi</span>
         <button type="submit" class="cta-btn active" id="login-submit-btn" style="width: 100%; margin-top: 15px;" data-i18n="auth_btn_login">Đăng nhập</button>
@@ -652,15 +652,15 @@
       <form id="register-form" class="auth-form">
         <div class="form-group">
           <label for="register-username" data-i18n="auth_label_username">Tên đăng nhập</label>
-          <input type="text" id="register-username" placeholder="Tên đăng nhập (ít nhất 3 ký tự)..." required autocomplete="username">
+          <input type="text" id="register-username" data-i18n-placeholder="auth_placeholder_username_reg" placeholder="Tên đăng nhập (ít nhất 3 ký tự)..." required autocomplete="username">
         </div>
         <div class="form-group">
           <label for="register-password" data-i18n="auth_label_password">Mật khẩu</label>
-          <input type="password" id="register-password" placeholder="Mật khẩu (ít nhất 6 ký tự)..." required autocomplete="new-password">
+          <input type="password" id="register-password" data-i18n-placeholder="auth_placeholder_password_reg" placeholder="Mật khẩu (ít nhất 6 ký tự)..." required autocomplete="new-password">
         </div>
         <div class="form-group">
           <label for="register-confirm-password" data-i18n="auth_label_confirm_password">Xác nhận mật khẩu</label>
-          <input type="password" id="register-confirm-password" placeholder="Nhập lại mật khẩu..." required autocomplete="new-password">
+          <input type="password" id="register-confirm-password" data-i18n-placeholder="auth_placeholder_confirm_password" placeholder="Nhập lại mật khẩu..." required autocomplete="new-password">
         </div>
         <span class="auth-error" id="register-error" style="display:none;">Lỗi</span>
         <button type="submit" class="cta-btn active" id="register-submit-btn" style="width: 100%; margin-top: 15px;" data-i18n="auth_btn_register">Đăng ký tài khoản</button>

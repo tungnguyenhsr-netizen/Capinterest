@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Application State
   const state = {
     currentTab: 'feed',
+    currentFeedItems: [],
     searchQuery: '',
     selectedCategory: 'all',
     auth: {
@@ -220,6 +221,13 @@ document.addEventListener('DOMContentLoaded', () => {
       nav_login: "Đăng nhập",
       nav_logout: "Đăng xuất",
       
+      // Tooltips & extra keys
+      title_add_link: "Thêm nón bằng link ảnh",
+      title_logout: "Đăng xuất",
+      title_settings: "Cấu hình API Key",
+      settings_apikey_placeholder: "Nhập API Key của bạn (AIzaSy...)",
+      coll_clear_btn: "Xóa tất cả",
+      
       // Category pills
       cat_all: "Tất cả",
       cat_trendy: "Xu hướng",
@@ -303,7 +311,35 @@ document.addEventListener('DOMContentLoaded', () => {
       notif_like_remove: "Đã bỏ lưu nón.",
       notif_like_error: "Lỗi khi lưu nón.",
       notif_like_remove_error: "Lỗi khi bỏ lưu nón.",
-
+      notif_account_restored: "Đã tự động khôi phục tài khoản và đồng bộ dữ liệu!",
+      notif_migrate_success: "Đã tự động khôi phục {count} nón yêu thích từ bản sao lưu máy khách!",
+      notif_settings_save_error: "Lỗi khi lưu cấu hình lên tài khoản. Cấu hình đã được lưu tạm trên máy này.",
+      notif_settings_saved: "Đã lưu cấu hình AI!",
+      notif_default_collection_shown: "Đã hiển thị bộ sưu tập nón có sẵn.",
+      notif_login_required_chat: "Vui lòng đăng nhập để trò chuyện với AI Design Agent!",
+      notif_collection_cleared: "Đã xóa toàn bộ bộ sưu tập.",
+      notif_collection_clear_failed: "Không thể xóa bộ sưu tập trên server.",
+      notif_welcome_back: "Chào mừng quay trở lại, @{username}!",
+      notif_logged_out: "Đã đăng xuất tài khoản.",
+      notif_sync_success: "Đã đồng bộ thành công {count} mẫu nón vào tài khoản của bạn!",
+      notif_sync_failed: "Đồng bộ thất bại. Vui lòng thử lại sau.",
+      notif_login_required_backup: "Bạn cần đăng nhập để sao lưu hệ thống!",
+      notif_backup_downloaded: "Đã tải xuống tệp sao lưu dữ liệu!",
+      notif_login_required_restore: "Bạn cần đăng nhập để phục hồi hệ thống!",
+      notif_restore_invalid: "Tệp sao lưu không hợp lệ! Thiếu users hoặc collections.",
+      notif_restore_success: "Khôi phục dữ liệu hệ thống thành công! Đang đồng bộ lại...",
+      notif_restore_failed_prefix: "Khôi phục thất bại: ",
+      notif_url_required: "Vui lòng điền liên kết nón!",
+      notif_add_success: "Đã lưu nón và chia sẻ thành công lên hệ thống!",
+      notif_error_prefix: "Lỗi: ",
+      notif_design_process_error: "Lỗi khi xử lý ý tưởng thiết kế.",
+      notif_save_hat_error_default: "Không thể lưu nón",
+      notif_register_success: "Đăng ký tài khoản thành công!",
+      notif_backup_failed_prefix: "Lỗi khi tải bản sao lưu: ",
+      status_searching: "Đang tìm kiếm nón thiết kế độc lạ: \"{query}\"...",
+      confirm_clear_collection: "Bạn có chắc muốn xóa toàn bộ bộ sưu tập?",
+      confirm_logout: "Bạn có chắc muốn đăng xuất?",
+ 
       // Add Link Modal
       add_title: "Thêm Nón Từ Liên Kết",
       add_subtitle: "Dán liên kết hình ảnh nón từ Pinterest hoặc web khác để hiển thị trên bản tin của bạn",
@@ -316,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
       add_placeholder_creator: "Ví dụ: pinterest_user",
       add_label_category: "Phân loại nón",
       add_btn_save: "Thêm vào Bản tin",
-
+ 
       // Auth Modal
       auth_tab_login: "Đăng nhập",
       auth_tab_register: "Đăng ký",
@@ -330,13 +366,106 @@ document.addEventListener('DOMContentLoaded', () => {
       auth_placeholder_confirm_password: "Nhập lại mật khẩu...",
       auth_btn_login: "Đăng nhập",
       auth_btn_register: "Đăng ký tài khoản",
-
+ 
       // Migration Banner
       mig_title: "Đồng bộ dữ liệu",
       mig_text_prefix: "Phát hiện ",
       mig_text_suffix: " mẫu nón yêu thích được lưu cục bộ. Đồng bộ lên tài khoản này ngay?",
       mig_btn_confirm: "Đồng bộ ngay",
-      mig_btn_cancel: "Hủy"
+      mig_btn_cancel: "Hủy",
+
+      // --- New Phase 2 translation keys (Vietnamese) ---
+      doc_title: "CapInterest - Pinterest cho Nón Mũ Trendy & AI Phân Tích",
+      notif_login_required_chat_placeholder: "Vui lòng đăng nhập để trò chuyện với AI Design Agent...",
+      settings_saving: "Đang lưu...",
+      auth_logging_in: "Đang đăng nhập...",
+      auth_registering: "Đang đăng ký...",
+      mig_syncing: "Đang đồng bộ...",
+      backup_loading: "Đang tải...",
+      restore_restoring: "Đang khôi phục...",
+      resolve_url_empty: "Vui lòng nhập liên kết trang web hoặc ảnh trước.",
+      resolve_status_fetching: "Đang tự động lấy dữ liệu ảnh...",
+      resolve_error_extract: "Không thể tự động trích xuất thông tin.",
+      resolve_status_success: "Trích xuất ảnh thành công!",
+      add_default_title: "Nón liên kết",
+      add_default_creator: "Link trực tiếp",
+      add_saving_hat: "Đang lưu nón...",
+      card_btn_scan: "Quét AI",
+      card_title_unlike: "Bỏ lưu",
+      auth_error_confirm_password: "Mật khẩu xác nhận không khớp!",
+      ai_design_default_desc: "Thiết kế nón độc đáo được tạo bởi AI Design Agent.",
+      color_copied: "Đã sao chép!",
+      click_to_copy_color: "Click để sao chép mã màu",
+      notif_scrape_failed: "Cào ảnh thất bại",
+      
+      // AI Analyzer bilingual support keys
+      analyzer_scanning: "AI Đang Phân Tích Thiết Kế...",
+      analyzer_decoding: "AI đang giải mã cấu trúc sợi vải, phối màu và tính toán điểm xu hướng...",
+      analyzer_failed: "Phân tích thất bại",
+      analyzer_check_settings: "Vui lòng kiểm tra lại cấu hình API trong phần cài đặt.",
+      style_default: "Nón Thời Trang",
+      material_default: "Vải hỗn hợp",
+      desc_default: "Không có đánh giá thẩm mỹ.",
+      gauge_level_potential: "Tiềm Năng",
+      gauge_verdict_potential: "Thiết kế độc đáo, có tiềm năng tạo xu hướng mới.",
+      gauge_level_hyper: "Siêu Xu Hướng (Hyper-Trend)",
+      gauge_verdict_hyper: "Thiết kế đang cực kỳ bùng nổ, dẫn đầu xu hướng thời trang streetwear!",
+      gauge_level_trending: "Thịnh Hành (Trending)",
+      gauge_verdict_trending: "Sản phẩm đang được ưa chuộng rộng rãi bởi giới trẻ và cộng đồng fashionista.",
+      gauge_level_niche: "Phong Cách Ngách (Classic/Niche)",
+      gauge_verdict_niche: "Một thiết kế cổ điển, mang tính thẩm mỹ bền vững, phù hợp gu thời trang kén chọn.",
+      error_unknown_ai: "Lỗi không xác định khi kết nối AI",
+
+      // Changelog Localization (Vietnamese)
+      changelog_title: "Nhật Ký Cập Nhật (Changelog)",
+      changelog_subtitle: "Lịch sử phát triển và nâng cấp hệ thống CapInterest phong cách Cyberpunk",
+      changelog_date_v160: "23 Tháng 5, 2026",
+      changelog_title_v160: "🌐 Hỗ Trợ Đa Ngôn Ngữ & Thiết Kế Logo SVG Tự Động Từ AI Design Agent",
+      changelog_li1_v160: "<span class=\"highlight-purple\">Hỗ Trợ Song Ngữ (VI/EN):</span> Tích hợp cấu trúc dịch tự động toàn bộ giao diện dựa trên thuộc tính `data-i18n`, hỗ trợ lưu cấu hình ngôn ngữ trực tiếp trong LocalStorage và đồng bộ hóa prompt AI tương ứng theo mã ngôn ngữ (`lang`).",
+      changelog_li2_v160: "<span class=\"highlight-purple\">Sinh Logo SVG Tự Động Từ AI:</span> Tinh chỉnh prompts hệ thống của AI Design Agent để sinh khối code SVG sạch (viewBox 400x400) biểu diễn logo nón cách điệu phong cách Cyberpunk ở cuối phản hồi.",
+      changelog_li3_v160: "<span class=\"highlight-purple\">Tương Tác Tham Chiếu BST:</span> Cho phép người dùng click chọn trực tiếp một mẫu nón trong Bộ sưu tập cảm hứng để làm tham chiếu gốc cho AI khi thiết kế nón mới, có phím hủy tham chiếu rõ ràng.",
+      changelog_li4_v160: "<span class=\"highlight-purple\">Lưu Thiết Kế Vào BST:</span> Thêm nút \"Lưu thiết kế vào BST\" dưới khung chat bubble để người dùng lưu trực tiếp nón tự thiết kế kèm hình ảnh logo SVG chất lượng cao, an toàn tuyệt đối với CSDL gốc.",
+      changelog_date_v153: "22 Tháng 5, 2026",
+      changelog_title_v153: "🎨 Tinh Chỉnh UI/UX & Tối Ưu Hóa Hiệu Năng Hệ Thống",
+      changelog_li1_v153: "<span class=\"highlight-cyan\">Sửa Lỗi Giao Diện & Di Động:</span> Khắc phục triệt để lỗi squashed sidebar tại AI Lab, căn chỉnh header tránh tràn viền trên tablet (768px - 1024px), và tối ưu hóa chiều cao Mobile Nav Bar cùng các vùng an toàn (safe-area-inset-bottom) của container chính, banner đồng bộ, và thông báo toast để tránh đè lấp phím điều hướng trên thiết bị có notch.",
+      changelog_li2_v153: "<span class=\"highlight-cyan\">Hiệu ứng Cyberpunk:</span> Nâng cấp hiệu ứng chuyển động, neon hover glow cho card nón và các nút chức năng, tích hợp hoạt ảnh glitch độc đáo cho logo.",
+      changelog_li3_v153: "<span class=\"highlight-cyan\">Tối Ưu Hóa Hiệu Năng Client-side:</span> Bổ sung debounce 500ms cho ô tìm kiếm, tích hợp cơ chế cache API /api/scrape vào sessionStorage để giảm tải DB và Serper API, đồng thời tự động dừng polling khi tab trình duyệt không hoạt động.",
+      changelog_date_v152: "22 Tháng 5, 2026",
+      changelog_title_v152: "⚙️ Đồng Nhất Cấu Hình Google AI Studio (Bỏ Chế Độ Demo)",
+      changelog_li1_v152: "<span class=\"highlight-pink\">Bỏ Hoàn Toàn Demo Mode:</span> Gỡ bỏ toàn bộ code sinh dữ liệu giả lập (mock response) trên Backend. Khi cấu hình sai hoặc thiếu API Key, hệ thống sẽ trả trực tiếp thông tin lỗi chi tiết về giao diện người dùng.",
+      changelog_li2_v152: "<span class=\"highlight-pink\">Giao Diện Settings Tinh Gọn:</span> Ẩn menu chọn chế độ AI Mode, mặc định chuyển toàn bộ hệ thống sang sử dụng Google AI Studio (Gemini API) với API Key của người dùng.",
+      changelog_li3_v152: "<span class=\"highlight-pink\">Tự Động Di Trú (Auto-Migration):</span> Hệ thống tự động chuyển đổi cấu hình cũ từ 'demo' sang 'gemini' trên máy khách để tránh các lỗi không tương thích.",
+      changelog_date_v151: "22 Tháng 5, 2026",
+      changelog_title_v151: "🤖 Kết Nối Gemini 3.5 Flash & Sửa Lỗi Giao Diện",
+      changelog_li1_v151: "<span class=\"highlight-cyan\">AI Design Agent Direct API:</span> Chạy trực tiếp qua model Gemini 3.5 Flash và endpoint v1beta bằng API Key của người dùng, loại bỏ chế độ mô phỏng demo.",
+      changelog_li2_v151: "<span class=\"highlight-cyan\">Minh Bạch Lỗi Kết Nối:</span> Loại bỏ fallback âm thầm khi API Key lỗi hoặc lỗi mạng; thông báo chi tiết lỗi Google API trực tiếp vào giao diện chat để người dùng tiện kiểm tra.",
+      changelog_li3_v151: "<span class=\"highlight-cyan\">UI Bộ Sưu Tập Bền Bỉ (Resilient):</span> Thay đổi cơ chế ẩn/xóa card nón khi ảnh lỗi bằng ảnh placeholder nón mặc định, giữ cho giao diện hiển thị bộ sưu tập không bị lỗi mất card do Render xóa đĩa tạm.",
+      changelog_date_v140: "21 Tháng 5, 2026",
+      changelog_title_v140: "💾 CSDL Chung & Lưu Trữ Đám Mây / Drive Fallback",
+      changelog_li1_v140: "<span class=\"highlight-cyan\">Shared Caching DB:</span> Lưu trữ và chia sẻ các mẫu nón tự dán link hiển thị lên bản tin chung cho tất cả người dùng khác.",
+      changelog_li2_v140: "<span class=\"highlight-cyan\">Google Drive Storage:</span> Hỗ trợ tải & lưu trữ hình ảnh nón lên Google Drive bằng tài khoản dịch vụ (Service Account).",
+      changelog_li3_v140: "<span class=\"highlight-cyan\">Fail-safe Local Fallback:</span> Tự động chuyển lưu cục bộ tại thư mục public/uploads/ nếu Google Drive API gặp sự cố.",
+      changelog_li4_v140: "<span class=\"highlight-cyan\">Serper Credit Limiter:</span> Kiểm soát giới hạn API tìm kiếm Serper (30 lượt/ngày) để tối ưu hóa credits và tự động tìm kiếm kết hợp trên cache.",
+      changelog_date_v130: "21 Tháng 5, 2026",
+      changelog_title_v130: "🔥 Trợ Lý AI Thiết Kế & Đồng Bộ Real-time",
+      changelog_li1_v130: "<span class=\"highlight-cyan\">AI Design Agent:</span> Tích hợp chatbot thời trang, tự động đọc gu thẩm mỹ từ bộ sưu tập của bạn để gợi ý ý tưởng và viết prompt vẽ ảnh Midjourney/DALL-E.",
+      changelog_li2_v130: "<span class=\"highlight-cyan\">Real-time Polling Sync:</span> Đồng bộ hóa bộ sưu tập lập tức qua nền hệ thống, không cần reload lại trang khi thích/bỏ thích trên thiết bị khác.",
+      changelog_li3_v130: "<span class=\"highlight-cyan\">Backup & Restore JSON:</span> Thêm chức năng xuất và nhập cơ sở dữ liệu hệ thống trực tiếp trong cài đặt.",
+      changelog_li4_v130: "<span class=\"highlight-cyan\">Cyberpunk Branding:</span> Cập nhật Logo và Favicon phong cách nón Neon Cyberpunk độc quyền.",
+      changelog_date_v120: "20 Tháng 5, 2026",
+      changelog_title_v120: "🛡️ API Key Riêng Tư & Fail-safe Dự Phòng",
+      changelog_li1_v120: "<span class=\"highlight-pink\">Lưu AI Key Theo Tài Khoản:</span> Cho phép người dùng nhập và lưu trữ Gemini API Key cá nhân đồng bộ trên đám mây.",
+      changelog_li2_v120: "<span class=\"highlight-pink\">Client-side Fail-safe:</span> Tự động tạo bản sao lưu cục bộ (mirror) và đẩy ngược lên server khi Render tự xóa dữ liệu tạm thời.",
+      changelog_li3_v120: "<span class=\"highlight-pink\">Popup Viewport Fix:</span> Tối ưu khung chi tiết nón, ngăn tràn viền trên Safari iPhone 12 Pro Max.",
+      changelog_date_v110: "19 Tháng 5, 2026",
+      changelog_title_v110: "📱 Mobile Responsive & Account System",
+      changelog_li1_v110: "<span class=\"highlight-cyan\">Authentication:</span> Hệ thống Đăng nhập / Đăng ký dùng JWT Token và mã hóa mật khẩu phía server.",
+      changelog_li2_v110: "<span class=\"highlight-cyan\">Mobile Bottom Bar:</span> Thanh điều hướng phong cách ứng dụng di động sang xịn mịn ở dưới cùng màn hình.",
+      changelog_li3_v110: "<span class=\"highlight-cyan\">Responsive Masonry:</span> Grid co giãn tối ưu, tự động chuyển về 2 cột trên điện thoại mà vẫn giữ tỷ lệ ảnh gốc.",
+      changelog_date_v100: "18 Tháng 5, 2026",
+      changelog_title_v100: "🚀 Khởi Chạy CapInterest",
+      changelog_li1_v100: "<span class=\"highlight-purple\">Pinterest Feed:</span> Thu thập hình ảnh nón mũ thời trang trực tuyến thông qua công cụ tìm kiếm và cào dữ liệu.",
+      changelog_li2_v100: "<span class=\"highlight-purple\">AI Scanner:</span> Máy quét tia laser thông minh, phân tích chất liệu, kiểu dáng nón và chấm điểm xu hướng nón."
     },
     en: {
       // Header & Navigation
@@ -349,6 +478,13 @@ document.addEventListener('DOMContentLoaded', () => {
       nav_add_link: "Paste Hat Link",
       nav_login: "Login",
       nav_logout: "Logout",
+      
+      // Tooltips & extra keys
+      title_add_link: "Add hat by image URL",
+      title_logout: "Logout",
+      title_settings: "Configure API Key",
+      settings_apikey_placeholder: "Enter your API Key (AIzaSy...)",
+      coll_clear_btn: "Clear all",
       
       // Category pills
       cat_all: "All",
@@ -433,7 +569,35 @@ document.addEventListener('DOMContentLoaded', () => {
       notif_like_remove: "Removed from collection.",
       notif_like_error: "Error saving hat.",
       notif_like_remove_error: "Error removing hat.",
-
+      notif_account_restored: "Account recovered and data synchronized automatically!",
+      notif_migrate_success: "Automatically restored {count} favorite hats from client backup!",
+      notif_settings_save_error: "Error saving configuration to account. Configuration has been saved temporarily on this device.",
+      notif_settings_saved: "AI configuration saved!",
+      notif_default_collection_shown: "Default hat collection displayed.",
+      notif_login_required_chat: "Please log in to chat with the AI Design Agent!",
+      notif_collection_cleared: "Entire collection cleared.",
+      notif_collection_clear_failed: "Could not clear collection on server.",
+      notif_welcome_back: "Welcome back, @{username}!",
+      notif_logged_out: "Logged out successfully.",
+      notif_sync_success: "Successfully synchronized {count} hats to your account!",
+      notif_sync_failed: "Synchronization failed. Please try again later.",
+      notif_login_required_backup: "You need to log in to download system backup!",
+      notif_backup_downloaded: "System backup file downloaded!",
+      notif_login_required_restore: "You need to log in to restore system database!",
+      notif_restore_invalid: "Invalid backup file! Missing users or collections.",
+      notif_restore_success: "System database restored successfully! Synchronizing...",
+      notif_restore_failed_prefix: "Restore failed: ",
+      notif_url_required: "Please enter a hat link!",
+      notif_add_success: "Hat saved and shared successfully to feed!",
+      notif_error_prefix: "Error: ",
+      notif_design_process_error: "Error processing design idea.",
+      notif_save_hat_error_default: "Could not save hat",
+      notif_register_success: "Registered account successfully!",
+      notif_backup_failed_prefix: "Error downloading backup: ",
+      status_searching: "Searching for unique custom hats: \"{query}\"...",
+      confirm_clear_collection: "Are you sure you want to clear the entire collection?",
+      confirm_logout: "Are you sure you want to log out?",
+ 
       // Add Link Modal
       add_title: "Add Hat from Link",
       add_subtitle: "Paste a hat image link from Pinterest or other sites to display on your feed",
@@ -446,7 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
       add_placeholder_creator: "e.g., pinterest_user",
       add_label_category: "Hat Category",
       add_btn_save: "Add to Feed",
-
+ 
       // Auth Modal
       auth_tab_login: "Login",
       auth_tab_register: "Register",
@@ -460,18 +624,125 @@ document.addEventListener('DOMContentLoaded', () => {
       auth_placeholder_confirm_password: "Confirm password...",
       auth_btn_login: "Login",
       auth_btn_register: "Register Account",
-
+ 
       // Migration Banner
       mig_title: "Sync Data",
       mig_text_prefix: "Detected ",
       mig_text_suffix: " locally saved favorite hats. Sync to this account now?",
       mig_btn_confirm: "Sync Now",
-      mig_btn_cancel: "Cancel"
+      mig_btn_cancel: "Cancel",
+
+      // --- New Phase 2 translation keys (English) ---
+      doc_title: "CapInterest - Pinterest for Trendy Hats & AI Analysis",
+      notif_login_required_chat_placeholder: "Please log in to chat with the AI Design Agent...",
+      settings_saving: "Saving...",
+      auth_logging_in: "Logging in...",
+      auth_registering: "Registering...",
+      mig_syncing: "Syncing...",
+      backup_loading: "Loading...",
+      restore_restoring: "Restoring...",
+      resolve_url_empty: "Please enter a website or image link first.",
+      resolve_status_fetching: "Auto-fetching image data...",
+      resolve_error_extract: "Could not automatically extract information.",
+      resolve_status_success: "Image extracted successfully!",
+      add_default_title: "Linked Hat",
+      add_default_creator: "Direct Link",
+      add_saving_hat: "Saving hat...",
+      card_btn_scan: "AI Scan",
+      card_title_unlike: "Unlike",
+      auth_error_confirm_password: "Confirm password does not match!",
+      ai_design_default_desc: "Unique hat design created by AI Design Agent.",
+      color_copied: "Copied!",
+      click_to_copy_color: "Click to copy color code",
+      notif_scrape_failed: "Scraping failed",
+      
+      // AI Analyzer bilingual support keys
+      analyzer_scanning: "AI is Analyzing Design...",
+      analyzer_decoding: "AI is decoding fabric structures, color palettes, and calculating trend scores...",
+      analyzer_failed: "Analysis Failed",
+      analyzer_check_settings: "Please verify your API configuration in settings.",
+      style_default: "Fashion Hat",
+      material_default: "Mixed Fabric",
+      desc_default: "No aesthetic evaluation.",
+      gauge_level_potential: "Potential",
+      gauge_verdict_potential: "Unique design with potential to start new trends.",
+      gauge_level_hyper: "Hyper-Trend",
+      gauge_verdict_hyper: "This design is exploding, leading the streetwear fashion trends!",
+      gauge_level_trending: "Trending",
+      gauge_verdict_trending: "Highly popular among youth and the fashionista community.",
+      gauge_level_niche: "Classic/Niche",
+      gauge_verdict_niche: "A classic design with sustainable aesthetics, suitable for selective fashion tastes.",
+      error_unknown_ai: "Unknown error connecting to AI",
+
+      // Changelog Localization (English)
+      changelog_title: "Update History (Changelog)",
+      changelog_subtitle: "Development history and system upgrades of CapInterest in Cyberpunk style",
+      changelog_date_v160: "May 23, 2026",
+      changelog_title_v160: "🌐 Multilingual Support & Automatic SVG Logo Design from AI Design Agent",
+      changelog_li1_v160: "<span class=\"highlight-purple\">Bilingual Support (VI/EN):</span> Integrated automatic translation logic for the entire interface using `data-i18n` attributes, supporting language configuration saved in LocalStorage and AI prompt synchronization by language code (`lang`).",
+      changelog_li2_v160: "<span class=\"highlight-purple\">Auto-generated SVG Logo:</span> Refined system prompts for the AI Design Agent to generate clean SVG code (viewBox 400x400) representing stylized Cyberpunk-style hat logos at the end of responses.",
+      changelog_li3_v160: "<span class=\"highlight-purple\">Collection Reference Interaction:</span> Allowed users to click a hat in their Inspiration Collection to use as a base reference for AI to design new hats, with a clear cancel button.",
+      changelog_li4_v160: "<span class=\"highlight-purple\">Save Design to Collection:</span> Added a \"Save Design to Collection\" button under the chat bubbles to directly save custom-designed hats with high-quality SVG logos, secure with the backend DB.",
+      changelog_date_v153: "May 22, 2026",
+      changelog_title_v153: "🎨 UI/UX Refinement & System Performance Optimization",
+      changelog_li1_v153: "<span class=\"highlight-cyan\">Layout & Mobile Fixes:</span> Fixed squashed sidebar issue in AI Lab, aligned header to prevent overflow on tablets (768px - 1024px), optimized Mobile Nav Bar height and safe areas (safe-area-inset-bottom) for the main container, sync banner, and toasts to avoid overlapping navigation keys on notched devices.",
+      changelog_li2_v153: "<span class=\"highlight-cyan\">Cyberpunk Effects:</span> Upgraded animation transitions, neon hover glows for hat cards and action buttons, and integrated a unique glitch animation for the logo.",
+      changelog_li3_v153: "<span class=\"highlight-cyan\">Client-side Optimization:</span> Added a 500ms debounce to the search input, integrated sessionStorage caching for /api/scrape to reduce DB and Serper API loads, and auto-paused polling when browser tab is inactive.",
+      changelog_date_v152: "May 22, 2026",
+      changelog_title_v152: "⚙️ Unified Google AI Studio Configuration (No Demo Mode)",
+      changelog_li1_v152: "<span class=\"highlight-pink\">Removed Demo Mode:</span> Removed all mock response logic from the Backend. When config is wrong or API Key is missing, detailed Google API errors are displayed to the user.",
+      changelog_li2_v152: "<span class=\"highlight-pink\">Streamlined Settings UI:</span> Hidden the AI Mode selection menu, defaulted the entire system to Google AI Studio (Gemini API) using the user's API Key.",
+      changelog_li3_v152: "<span class=\"highlight-pink\">Auto-Migration:</span> Auto-migrated old client configurations from 'demo' to 'gemini' to avoid compatibility issues.",
+      changelog_date_v151: "May 22, 2026",
+      changelog_title_v151: "🤖 Gemini 3.5 Flash Integration & Interface Fixes",
+      changelog_li1_v151: "<span class=\"highlight-cyan\">AI Design Agent Direct API:</span> Runs directly through Gemini 3.5 Flash and v1beta endpoint using user's API Key, removing mock demo simulations.",
+      changelog_li2_v151: "<span class=\"highlight-cyan\">Transparent Connection Errors:</span> Removed silent fallbacks on network or API Key errors; displayed detailed Google API errors directly in the chat for easier troubleshooting.",
+      changelog_li3_v151: "<span class=\"highlight-cyan\">Resilient Collection UI:</span> Replaced failed images with default hat placeholders, preventing cards from disappearing when temporary disk storage is cleared on Render.",
+      changelog_date_v140: "May 21, 2026",
+      changelog_title_v140: "💾 Shared Caching DB & Google Drive Fallback",
+      changelog_li1_v140: "<span class=\"highlight-cyan\">Shared Caching DB:</span> Saved and shared custom-added hats to the public feed for all users.",
+      changelog_li2_v140: "<span class=\"highlight-cyan\">Google Drive Storage:</span> Supported uploading & storing hat images to Google Drive via Service Account.",
+      changelog_li3_v140: "<span class=\"highlight-cyan\">Fail-safe Local Fallback:</span> Auto-fell back to public/uploads/ local directory when Google Drive API encountered issues.",
+      changelog_li4_v140: "<span class=\"highlight-cyan\">Serper Credit Limiter:</span> Monitored Serper search limits (30 queries/day) to optimize credits, falling back to database query cache.",
+      changelog_date_v130: "May 21, 2026",
+      changelog_title_v130: "🔥 AI Design Agent & Real-time Sync",
+      changelog_li1_v130: "<span class=\"highlight-cyan\">AI Design Agent:</span> Integrated fashion chatbot that reads your collection tastes to suggest design concepts and generate Midjourney/DALL-E prompts.",
+      changelog_li2_v130: "<span class=\"highlight-cyan\">Real-time Polling Sync:</span> Synchronized favorite collections instantly in the background without needing page reloads when liked/unliked on another device.",
+      changelog_li3_v130: "<span class=\"highlight-cyan\">Backup & Restore JSON:</span> Added export/import system database functionality directly in Settings.",
+      changelog_li4_v130: "<span class=\"highlight-cyan\">Cyberpunk Branding:</span> Updated Logo and Favicon design to exclusive Neon Cyberpunk hats.",
+      changelog_date_v120: "May 20, 2026",
+      changelog_title_v120: "🛡️ Private API Keys & Fail-safe Backup Mirror",
+      changelog_li1_v120: "<span class=\"highlight-pink\">Cloud API Key Storage:</span> Allowed users to enter and synchronize their Gemini API Keys to the cloud.",
+      changelog_li2_v120: "<span class=\"highlight-pink\">Client-side Fail-safe:</span> Automatically created local backups (mirror) and pushed back to the server when Render cleared temporary files.",
+      changelog_li3_v120: "<span class=\"highlight-pink\">Popup Viewport Fix:</span> Optimized hat detail modal layout, preventing overflow on Safari iPhone 12 Pro Max.",
+      changelog_date_v110: "May 19, 2026",
+      changelog_title_v110: "📱 Mobile Responsive & Account System",
+      changelog_li1_v110: "<span class=\"highlight-cyan\">Authentication:</span> Sign in / Sign up system using JWT Tokens and server-side password encryption.",
+      changelog_li2_v110: "<span class=\"highlight-cyan\">Mobile Bottom Bar:</span> Premium mobile bottom navigation bar.",
+      changelog_li3_v110: "<span class=\"highlight-cyan\">Responsive Masonry:</span> Flexible grid that scales down to 2 columns on mobile.",
+      changelog_date_v100: "May 18, 2026",
+      changelog_title_v100: "🚀 CapInterest Launch",
+      changelog_li1_v100: "<span class=\"highlight-purple\">Pinterest Feed:</span> Collected online hat/cap images via web search engines and scrapers.",
+      changelog_li2_v100: "<span class=\"highlight-purple\">AI Scanner:</span> Intelligent laser scanner analyzing hat materials, shapes, and calculating trend scores."
     }
   };
 
+  function getTranslation(key, replacements = {}) {
+    const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.vi;
+    let text = dict[key] || TRANSLATIONS.vi[key] || key;
+    for (const [k, v] of Object.entries(replacements)) {
+      text = text.replace(`{${k}}`, v);
+    }
+    return text;
+  }
+
+  window.AppConfig = { getTranslation, state };
+
   function applyTranslations(lang) {
     const dict = TRANSLATIONS[lang] || TRANSLATIONS.vi;
+    if (dict.doc_title) {
+      document.title = dict.doc_title;
+    }
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
       if (dict[key]) {
@@ -479,50 +750,19 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    const searchInput = document.getElementById('search-input');
-    if (searchInput && dict.search_placeholder) {
-      searchInput.placeholder = dict.search_placeholder;
-    }
-    const chatInput = document.getElementById('agent-chat-input');
-    if (chatInput && dict.agent_input_placeholder) {
-      chatInput.placeholder = dict.agent_input_placeholder;
-    }
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (dict[key]) {
+        el.setAttribute('placeholder', dict[key]);
+      }
+    });
 
-    // Add Link Modal input placeholders
-    const addUrlInput = document.getElementById('add-url-input');
-    if (addUrlInput && dict.add_placeholder_url) {
-      addUrlInput.placeholder = dict.add_placeholder_url;
-    }
-    const addTitleInput = document.getElementById('add-title-input');
-    if (addTitleInput && dict.add_placeholder_title) {
-      addTitleInput.placeholder = dict.add_placeholder_title;
-    }
-    const addCreatorInput = document.getElementById('add-creator-input');
-    if (addCreatorInput && dict.add_placeholder_creator) {
-      addCreatorInput.placeholder = dict.add_placeholder_creator;
-    }
-
-    // Auth Modal input placeholders
-    const loginUsernameInput = document.getElementById('login-username');
-    if (loginUsernameInput && dict.auth_placeholder_username) {
-      loginUsernameInput.placeholder = dict.auth_placeholder_username;
-    }
-    const loginPasswordInput = document.getElementById('login-password');
-    if (loginPasswordInput && dict.auth_placeholder_password) {
-      loginPasswordInput.placeholder = dict.auth_placeholder_password;
-    }
-    const regUsernameInput = document.getElementById('register-username');
-    if (regUsernameInput && dict.auth_placeholder_username_reg) {
-      regUsernameInput.placeholder = dict.auth_placeholder_username_reg;
-    }
-    const regPasswordInput = document.getElementById('register-password');
-    if (regPasswordInput && dict.auth_placeholder_password_reg) {
-      regPasswordInput.placeholder = dict.auth_placeholder_password_reg;
-    }
-    const regConfirmPasswordInput = document.getElementById('register-confirm-password');
-    if (regConfirmPasswordInput && dict.auth_placeholder_confirm_password) {
-      regConfirmPasswordInput.placeholder = dict.auth_placeholder_confirm_password;
-    }
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      const key = el.getAttribute('data-i18n-title');
+      if (dict[key]) {
+        el.setAttribute('title', dict[key]);
+      }
+    });
     
     // Also re-render elements that depend on dynamic counts/labels
     const count = state.likedItemsObjects.length;
@@ -534,6 +774,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (agentContextCountEl) {
       agentContextCountEl.innerHTML = `${count} <span data-i18n="agent_sidebar_count">${dict.agent_sidebar_count}</span>`;
     }
+
+    // Re-render feed/grid and collection immediately
+    if (state.currentFeedItems && state.currentFeedItems.length > 0) {
+      renderGrid(state.currentFeedItems, false);
+    }
+    renderCollection();
+
+    // Update Chat reference UI, input placeholders, and chat context
+    updateChatReferenceUI();
+    updateAuthUI();
+    renderChatContext();
   }
 
   // API Request Helper
@@ -699,7 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
 
-        showNotification('Đã tự động khôi phục tài khoản và đồng bộ dữ liệu!');
+        showNotification(getTranslation('notif_account_restored'));
         isRecovering = false;
         return true;
       }
@@ -920,18 +1171,25 @@ document.addEventListener('DOMContentLoaded', () => {
   <!-- Outer glowing border -->
   <rect x="20" y="20" width="360" height="360" rx="12" fill="none" stroke="url(#neonGrad)" stroke-width="2" filter="url(#neonGlow)" opacity="0.6"/>
   
-  <!-- Centered Scaled Cap Logo -->
-  <g transform="translate(100, 60) scale(2)">
-    <path d="M 50,15 C 26,15 16,35 16,62 C 35,66 65,66 84,62 C 84,35 74,15 50,15 Z" fill="url(#accentGrad)" opacity="0.25" stroke="url(#accentGrad)" stroke-width="2" />
-    <path d="M 50,15 L 50,44" stroke="#00f2fe" stroke-width="2" stroke-linecap="round" opacity="0.8" />
-    <path d="M 32,25 C 40,32 40,42 50,44" fill="none" stroke="#7f00ff" stroke-width="1.5" opacity="0.7" />
-    <path d="M 68,25 C 60,32 60,42 50,44" fill="none" stroke="#7f00ff" stroke-width="1.5" opacity="0.7" />
-    <polygon points="50,29 58,34 58,44 50,49 42,44 42,34" fill="#00f2fe" filter="url(#neonGlow)" opacity="0.85" />
-    <polygon points="50,32 55,35 55,43 50,46 45,43 45,35" fill="#0a0a14" />
-    <circle cx="50" cy="39" r="2" fill="#ff007f" filter="url(#neonGlow)" />
-    <path d="M 12,61 C 30,74 70,74 88,61 C 94,65 91,72 81,77 C 65,83 35,83 19,77 C 9,72 6,65 12,61 Z" fill="url(#neonGrad)" filter="url(#neonGlow)" opacity="0.9" />
-    <path d="M 15,62 C 32,73 68,73 85,62" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
-    <path d="M 21,66 C 35,75 65,75 79,66" fill="none" stroke="#ff007f" stroke-width="2" stroke-linecap="round" opacity="0.8" />
+  <!-- Centered Glowing Geometric/Cybernetic Emblem -->
+  <g transform="translate(200, 170)">
+    <!-- Cybernetic lines / crosshairs -->
+    <line x1="-90" y1="0" x2="90" y2="0" stroke="#ff007f" stroke-width="1" opacity="0.5" stroke-dasharray="4 4" />
+    <line x1="0" y1="-100" x2="0" y2="105" stroke="#00f2fe" stroke-width="1" opacity="0.5" stroke-dasharray="4 4" />
+    
+    <!-- Outer Shield Outline -->
+    <path d="M 0,-80 L 70,-35 L 70,30 L 0,85 L -70,30 L -70,-35 Z" fill="url(#accentGrad)" fill-opacity="0.15" stroke="url(#neonGrad)" stroke-width="3" filter="url(#neonGlow)" />
+    
+    <!-- Inner Accent Shield -->
+    <path d="M 0,-65 L 55,-27 L 55,23 L 0,70 L -55,23 L -55,-27 Z" fill="none" stroke="url(#accentGrad)" stroke-width="1.5" stroke-dasharray="8 4" opacity="0.8" />
+    
+    <!-- Neon Core (Hexagon) -->
+    <polygon points="0,-35 25,-12 25,12 0,35 -25,12 -25,-12" fill="#00f2fe" filter="url(#neonGlow)" opacity="0.9" />
+    <polygon points="0,-27 19,-9 19,9 0,27 -19,9 -19,-9" fill="#120e2e" />
+    
+    <!-- Central Power Source -->
+    <circle cx="0" cy="0" r="5" fill="#ff007f" filter="url(#neonGlow)" />
+    <circle cx="0" cy="0" r="2" fill="#ffffff" />
   </g>
   
   <text x="200" y="325" fill="#ffffff" font-family="'Outfit', sans-serif" font-size="18" font-weight="800" text-anchor="middle" filter="url(#neonGlow)">${cleanTitle}</text>
@@ -997,11 +1255,11 @@ document.addEventListener('DOMContentLoaded', () => {
         collCountEl.innerHTML = `${count} <span data-i18n="coll_count">${dict.coll_count}</span>`;
       }
       
-      showNotification(dict.save_design_success || 'Đã lưu thiết kế AI vào bộ sưu tập!');
+      showNotification(getTranslation('save_design_success'));
       return true;
     } catch (err) {
       console.error(err);
-      showNotification(dict.save_design_error || 'Lỗi khi lưu thiết kế.');
+      showNotification(getTranslation('save_design_error'));
       return false;
     }
   }
@@ -1090,7 +1348,7 @@ document.addEventListener('DOMContentLoaded', () => {
       DOM.userUsername.textContent = `@${state.auth.username}`;
       if (DOM.agentChatInput) {
         DOM.agentChatInput.disabled = false;
-        DOM.agentChatInput.placeholder = "Mô tả ý tưởng thiết kế nón của bạn ở đây... (Ấn Enter để gửi, Shift+Enter xuống dòng)";
+        DOM.agentChatInput.placeholder = getTranslation('agent_input_placeholder');
       }
       if (DOM.agentSendBtn) {
         DOM.agentSendBtn.disabled = false;
@@ -1102,7 +1360,7 @@ document.addEventListener('DOMContentLoaded', () => {
       DOM.userUsername.textContent = '';
       if (DOM.agentChatInput) {
         DOM.agentChatInput.disabled = true;
-        DOM.agentChatInput.placeholder = "Vui lòng đăng nhập để trò chuyện với AI Design Agent...";
+        DOM.agentChatInput.placeholder = getTranslation('notif_login_required_chat_placeholder');
       }
       if (DOM.agentSendBtn) {
         DOM.agentSendBtn.disabled = true;
@@ -1165,7 +1423,7 @@ document.addEventListener('DOMContentLoaded', () => {
               try {
                 const migrateRes = await apiCall('/api/collection/migrate', 'POST', { items: backupLikes });
                 if (migrateRes.success) {
-                  showNotification(`Đã tự động khôi phục ${migrateRes.added} nón yêu thích từ bản sao lưu máy khách!`);
+                  showNotification(getTranslation('notif_migrate_success', { count: migrateRes.added }));
                   const freshRes = await apiCall('/api/collection');
                   if (freshRes.success) {
                     state.likedItemsObjects = freshRes.data || [];
@@ -1368,21 +1626,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.auth.token) {
       try {
         DOM.saveSettingsBtn.disabled = true;
-        DOM.saveSettingsBtn.textContent = 'Đang lưu...';
+        DOM.saveSettingsBtn.textContent = getTranslation('settings_saving');
         await apiCall('/api/user/settings', 'POST', { aiMode: mode, apiKey: key });
       } catch (err) {
         console.error('Lỗi khi lưu cấu hình lên tài khoản:', err);
-        showNotification('Lỗi khi lưu cấu hình lên tài khoản. Cấu hình đã được lưu tạm trên máy này.');
+        showNotification(getTranslation('notif_settings_save_error'));
       } finally {
         DOM.saveSettingsBtn.disabled = false;
-        DOM.saveSettingsBtn.textContent = 'Lưu cấu hình';
+        DOM.saveSettingsBtn.textContent = getTranslation('settings_save_btn');
       }
     }
     
     DOM.settingsModal.classList.remove('active');
     
     // Visual Notification
-    showNotification('Đã lưu cấu hình AI!');
+    showNotification(getTranslation('notif_settings_saved'));
   }
 
   function showNotification(message) {
@@ -1418,7 +1676,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (DOM.infiniteLoading) DOM.infiniteLoading.style.display = 'flex';
     } else {
       DOM.scrapeStatus.style.display = 'flex';
-      DOM.scrapeStatusText.textContent = `Đang tìm kiếm nón thiết kế độc lạ: "${query}"...`;
+      DOM.scrapeStatusText.textContent = getTranslation('status_searching', { query: query });
       DOM.pinterestGrid.innerHTML = '';
       DOM.emptyState.style.display = 'none';
       state.currentPage = 1;
@@ -1438,7 +1696,7 @@ document.addEventListener('DOMContentLoaded', () => {
         result = await response.json();
 
         if (!response.ok || !result.success) {
-          throw new Error(result.error || 'Cào ảnh thất bại');
+          throw new Error(result.error || getTranslation('notif_scrape_failed'));
         }
         scrapeCache.set(query, page, result);
       } else {
@@ -1488,6 +1746,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (append) {
         state.scrapedData = [...state.scrapedData, ...newItems];
         if (newItems.length > 0) {
+          state.currentFeedItems = [...(state.currentFeedItems || []), ...newItems];
           renderGrid(newItems, true);
         }
       } else {
@@ -1510,6 +1769,8 @@ document.addEventListener('DOMContentLoaded', () => {
           displayData = [...filteredManuals, ...filteredDefaults, ...state.scrapedData];
         }
 
+        state.currentFeedItems = displayData;
+
         if (displayData.length === 0) {
           DOM.emptyState.style.display = 'flex';
         } else {
@@ -1527,8 +1788,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const filteredDefaults = state.defaultHats.filter(h => 
           state.selectedCategory === 'all' || h.category === state.selectedCategory
         );
-        renderGrid([...filteredManuals, ...filteredDefaults], false);
-        showNotification('Đã hiển thị bộ sưu tập nón có sẵn.');
+        state.currentFeedItems = [...filteredManuals, ...filteredDefaults];
+        renderGrid(state.currentFeedItems, false);
+        showNotification(getTranslation('notif_default_collection_shown'));
       }
     } finally {
       if (append) {
@@ -1571,7 +1833,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <span>@${item.creator || 'streetwear'}</span>
               <button class="card-btn" data-action="analyze">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
-                Quét AI
+                ${getTranslation('card_btn_scan')}
               </button>
             </div>
           </div>
@@ -1614,10 +1876,10 @@ document.addEventListener('DOMContentLoaded', () => {
           state.likedItems.splice(idx, 1);
           btnElement.classList.remove('liked');
           state.likedItemsObjects = state.likedItemsObjects.filter(o => (o.id || o.image) !== itemId);
-          showNotification('Đã bỏ lưu nón.');
+          showNotification(getTranslation('notif_like_remove'));
         } catch (err) {
           console.error(err);
-          showNotification('Lỗi khi bỏ lưu nón.');
+          showNotification(getTranslation('notif_like_remove_error'));
         } finally {
           btnElement.disabled = false;
         }
@@ -1628,10 +1890,10 @@ document.addEventListener('DOMContentLoaded', () => {
           state.likedItems.push(itemId);
           btnElement.classList.add('liked');
           state.likedItemsObjects.push(item);
-          showNotification('Đã lưu vào bộ sưu tập nón yêu thích!');
+          showNotification(getTranslation('notif_like_add'));
         } catch (err) {
           console.error(err);
-          showNotification('Lỗi khi lưu nón.');
+          showNotification(getTranslation('notif_like_error'));
         } finally {
           btnElement.disabled = false;
         }
@@ -1644,12 +1906,12 @@ document.addEventListener('DOMContentLoaded', () => {
         state.likedItems.splice(idx, 1);
         btnElement.classList.remove('liked');
         state.likedItemsObjects = state.likedItemsObjects.filter(o => (o.id || o.image) !== itemId);
-        showNotification('Đã bỏ lưu nón.');
+        showNotification(getTranslation('notif_like_remove'));
       } else {
         state.likedItems.push(itemId);
         btnElement.classList.add('liked');
         state.likedItemsObjects.push(item);
-        showNotification('Đã lưu vào bộ sưu tập nón yêu thích!');
+        showNotification(getTranslation('notif_like_add'));
       }
       localStorage.setItem('capinterest_likes', JSON.stringify(state.likedItems));
       localStorage.setItem('capinterest_likes_objects', JSON.stringify(state.likedItemsObjects));
@@ -1690,7 +1952,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearBtn = DOM.clearCollectionBtn;
     
     // Update count
-    DOM.collectionCount.textContent = `${items.length} mẫu nón`;
+    DOM.collectionCount.textContent = `${items.length} ${getTranslation('coll_count')}`;
     
     if (items.length === 0) {
       grid.innerHTML = '';
@@ -1711,17 +1973,17 @@ document.addEventListener('DOMContentLoaded', () => {
         <img src="${item.image}" alt="${item.title}" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=500&auto=format&fit=crop&q=60'; this.classList.add('img-fallback');">
         <div class="cap-card-overlay">
           <div class="overlay-top">
-            <button class="like-btn liked" data-id="${item.id || item.image}" title="Bỏ lưu">
+            <button class="like-btn liked" data-id="${item.id || item.image}" title="${getTranslation('card_title_unlike')}">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             </button>
           </div>
           <div class="overlay-bottom">
-            <h4 class="overlay-title">${item.title || 'Nón yêu thích'}</h4>
+            <h4 class="overlay-title">${item.title || getTranslation('coll_title')}</h4>
             <div class="overlay-meta">
               <span>@${item.creator || item.source || 'streetwear'}</span>
               <button class="card-btn" data-action="analyze">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
-                Quét AI
+                ${getTranslation('card_btn_scan')}
               </button>
             </div>
           </div>
@@ -1850,7 +2112,7 @@ document.addEventListener('DOMContentLoaded', () => {
       DOM.modalBrainstormBtn.onclick = () => {
         DOM.detailModal.classList.remove('active');
         if (!state.auth.token) {
-          showNotification('Vui lòng đăng nhập để trò chuyện với AI Design Agent!');
+          showNotification(getTranslation('notif_login_required_chat'));
           DOM.loginTriggerBtn.click();
           return;
         }
@@ -1865,7 +2127,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Populate and focus prompt input
         if (DOM.agentChatInput) {
-          DOM.agentChatInput.value = `Hãy brainstorm và gợi ý thiết kế mới lấy cảm hứng từ mẫu nón "${item.title}" của @${item.creator || 'fashion_source'} mà tôi đang xem.`;
+          const brainstormPrompt = state.lang === 'en'
+            ? `Please brainstorm and suggest a new design inspired by the hat model "${item.title}" by @${item.creator || 'fashion_source'} that I am viewing.`
+            : `Hãy brainstorm và gợi ý thiết kế mới lấy cảm hứng từ mẫu nón "${item.title}" của @${item.creator || 'fashion_source'} mà tôi đang xem.`;
+          DOM.agentChatInput.value = brainstormPrompt;
           DOM.agentChatInput.style.height = 'auto';
           DOM.agentChatInput.style.height = DOM.agentChatInput.scrollHeight + 'px';
           setTimeout(() => DOM.agentChatInput.focus(), 150);
@@ -2015,7 +2280,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Clear all collection
     DOM.clearCollectionBtn.addEventListener('click', async () => {
-      if (confirm('Bạn có chắc muốn xóa toàn bộ bộ sưu tập?')) {
+      if (confirm(getTranslation('confirm_clear_collection'))) {
         if (state.auth.token) {
           try {
             // Delete all items one by one on the server
@@ -2024,9 +2289,9 @@ document.addEventListener('DOMContentLoaded', () => {
             );
             await Promise.all(promises);
             await syncCollection();
-            showNotification('Đã xóa toàn bộ bộ sưu tập.');
+            showNotification(getTranslation('notif_collection_cleared'));
           } catch (err) {
-            showNotification('Không thể xóa bộ sưu tập trên server.');
+            showNotification(getTranslation('notif_collection_clear_failed'));
           }
         } else {
           state.likedItems = [];
@@ -2035,7 +2300,7 @@ document.addEventListener('DOMContentLoaded', () => {
           localStorage.setItem('capinterest_likes_objects', '[]');
           updateCollectionBadge();
           renderCollection();
-          showNotification('Đã xóa toàn bộ bộ sưu tập.');
+          showNotification(getTranslation('notif_collection_cleared'));
         }
       }
     });
@@ -2090,7 +2355,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
           submitBtn.disabled = true;
-          submitBtn.textContent = 'Đang đăng nhập...';
+          submitBtn.textContent = getTranslation('auth_logging_in');
 
           const res = await apiCall('/api/auth/login', 'POST', { username, password });
           if (res.success) {
@@ -2107,14 +2372,14 @@ document.addEventListener('DOMContentLoaded', () => {
             await syncCollection();
             startCollectionPolling();
             checkMigrationAfterLogin();
-            showNotification(`Chào mừng quay trở lại, @${res.username}!`);
+            showNotification(getTranslation('notif_welcome_back', { username: res.username }));
           }
         } catch (err) {
           DOM.loginError.textContent = err.message;
           DOM.loginError.style.display = 'block';
         } finally {
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Đăng nhập';
+          submitBtn.textContent = getTranslation('auth_btn_login');
         }
       });
     }
@@ -2131,14 +2396,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const submitBtn = document.getElementById('register-submit-btn');
 
         if (password !== confirmPassword) {
-          DOM.registerError.textContent = 'Mật khẩu xác nhận không khớp!';
+          DOM.registerError.textContent = getTranslation('auth_error_confirm_password');
           DOM.registerError.style.display = 'block';
           return;
         }
 
         try {
           submitBtn.disabled = true;
-          submitBtn.textContent = 'Đang đăng ký...';
+          submitBtn.textContent = getTranslation('auth_registering');
 
           const res = await apiCall('/api/auth/register', 'POST', { username, password });
           if (res.success) {
@@ -2155,14 +2420,14 @@ document.addEventListener('DOMContentLoaded', () => {
             await syncCollection();
             startCollectionPolling();
             checkMigrationAfterLogin();
-            showNotification(`Đăng ký tài khoản thành công!`);
+            showNotification(getTranslation('notif_register_success'));
           }
         } catch (err) {
           DOM.registerError.textContent = err.message;
           DOM.registerError.style.display = 'block';
         } finally {
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Đăng ký tài khoản';
+          submitBtn.textContent = getTranslation('auth_btn_register');
         }
       });
     }
@@ -2171,7 +2436,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (DOM.logoutBtn) {
       DOM.logoutBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (confirm('Bạn có chắc muốn đăng xuất?')) {
+        if (confirm(getTranslation('confirm_logout'))) {
           state.auth.token = null;
           state.auth.username = null;
           localStorage.removeItem('capinterest_token');
@@ -2189,7 +2454,7 @@ document.addEventListener('DOMContentLoaded', () => {
           
           DOM.migrationBanner.style.display = 'none';
           
-          showNotification('Đã đăng xuất tài khoản.');
+          showNotification(getTranslation('notif_logged_out'));
 
           if (state.currentTab === 'collection') {
             switchTab('feed');
@@ -2211,7 +2476,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
           DOM.migrationConfirmBtn.disabled = true;
-          DOM.migrationConfirmBtn.textContent = 'Đang đồng bộ...';
+          DOM.migrationConfirmBtn.textContent = getTranslation('mig_syncing');
           
           const res = await apiCall('/api/collection/migrate', 'POST', { items: localLikes });
           if (res.success) {
@@ -2220,14 +2485,14 @@ document.addEventListener('DOMContentLoaded', () => {
             
             DOM.migrationBanner.style.display = 'none';
             await syncCollection();
-            showNotification(`Đã đồng bộ thành công ${res.added} mẫu nón vào tài khoản của bạn!`);
+            showNotification(getTranslation('notif_sync_success', { count: res.added }));
           }
         } catch (err) {
           console.error(err);
-          showNotification('Đồng bộ thất bại. Vui lòng thử lại sau.');
+          showNotification(getTranslation('notif_sync_failed'));
         } finally {
           DOM.migrationConfirmBtn.disabled = false;
-          DOM.migrationConfirmBtn.textContent = 'Đồng bộ ngay';
+          DOM.migrationConfirmBtn.textContent = getTranslation('mig_btn_confirm');
         }
       });
     }
@@ -2361,13 +2626,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (DOM.dbBackupBtn) {
       DOM.dbBackupBtn.addEventListener('click', async () => {
         if (!state.auth.token) {
-          showNotification('Bạn cần đăng nhập để sao lưu hệ thống!');
+          showNotification(getTranslation('notif_login_required_backup'));
           return;
         }
         try {
           DOM.dbBackupBtn.disabled = true;
           const originalText = DOM.dbBackupBtn.innerHTML;
-          DOM.dbBackupBtn.innerHTML = 'Đang tải...';
+          DOM.dbBackupBtn.innerHTML = getTranslation('backup_loading');
           const res = await apiCall('/api/admin/backup');
           if (res.success) {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(res.data, null, 2));
@@ -2377,12 +2642,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
-            showNotification('Đã tải xuống tệp sao lưu dữ liệu!');
+            showNotification(getTranslation('notif_backup_downloaded'));
           }
           DOM.dbBackupBtn.innerHTML = originalText;
         } catch (err) {
           console.error(err);
-          showNotification('Lỗi khi tải bản sao lưu: ' + err.message);
+          showNotification(getTranslation('notif_backup_failed_prefix') + err.message);
         } finally {
           DOM.dbBackupBtn.disabled = false;
         }
@@ -2392,7 +2657,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (DOM.dbRestoreTriggerBtn && DOM.dbRestoreFileInput) {
       DOM.dbRestoreTriggerBtn.addEventListener('click', () => {
         if (!state.auth.token) {
-          showNotification('Bạn cần đăng nhập để phục hồi hệ thống!');
+          showNotification(getTranslation('notif_login_required_restore'));
           return;
         }
         DOM.dbRestoreFileInput.click();
@@ -2407,17 +2672,17 @@ document.addEventListener('DOMContentLoaded', () => {
           try {
             const data = JSON.parse(evt.target.result);
             if (!data.users || !data.collections) {
-              showNotification('Tệp sao lưu không hợp lệ! Thiếu users hoặc collections.');
+              showNotification(getTranslation('notif_restore_invalid'));
               return;
             }
 
             DOM.dbRestoreTriggerBtn.disabled = true;
             const originalText = DOM.dbRestoreTriggerBtn.innerHTML;
-            DOM.dbRestoreTriggerBtn.innerHTML = 'Đang khôi phục...';
+            DOM.dbRestoreTriggerBtn.innerHTML = getTranslation('restore_restoring');
 
             const res = await apiCall('/api/admin/restore', 'POST', data);
             if (res.success) {
-              showNotification('Khôi phục dữ liệu hệ thống thành công! Đang đồng bộ lại...');
+              showNotification(getTranslation('notif_restore_success'));
               await syncUserSettings();
               await syncCollection();
               fetchScrapedHats('trendy caps');
@@ -2426,7 +2691,7 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.dbRestoreTriggerBtn.innerHTML = originalText;
           } catch (err) {
             console.error(err);
-            showNotification('Khôi phục thất bại: ' + err.message);
+            showNotification(getTranslation('notif_restore_failed_prefix') + err.message);
           } finally {
             DOM.dbRestoreTriggerBtn.disabled = false;
             DOM.dbRestoreFileInput.value = '';
@@ -2553,13 +2818,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!url) {
           DOM.resolveStatus.style.display = 'block';
           DOM.resolveStatus.style.color = '#ff4a5a';
-          DOM.resolveStatus.textContent = 'Vui lòng nhập liên kết trang web hoặc ảnh trước.';
+          DOM.resolveStatus.textContent = getTranslation('resolve_url_empty');
           return;
         }
 
         DOM.resolveStatus.style.display = 'block';
         DOM.resolveStatus.style.color = 'var(--accent-cyan)';
-        DOM.resolveStatus.textContent = 'Đang tự động lấy dữ liệu ảnh...';
+        DOM.resolveStatus.textContent = getTranslation('resolve_status_fetching');
         DOM.resolveUrlBtn.disabled = true;
 
         try {
@@ -2571,7 +2836,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const result = await response.json();
 
           if (!response.ok || !result.success) {
-            throw new Error(result.error || 'Không thể tự động trích xuất thông tin.');
+            throw new Error(result.error || getTranslation('resolve_error_extract'));
           }
 
           const info = result.data;
@@ -2581,7 +2846,7 @@ document.addEventListener('DOMContentLoaded', () => {
           DOM.resolvePreviewContainer.style.display = 'block';
 
           DOM.resolveStatus.style.color = '#39ff14'; // Neon Green
-          DOM.resolveStatus.textContent = 'Trích xuất ảnh thành công!';
+          DOM.resolveStatus.textContent = getTranslation('resolve_status_success');
         } catch (err) {
           console.error('Resolve URL failed:', err);
           DOM.resolveStatus.style.color = '#ff007f'; // Neon Pink
@@ -2599,19 +2864,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const image = DOM.resolvePreviewImg.src || url;
 
         if (!url) {
-          showNotification('Vui lòng điền liên kết nón!');
+          showNotification(getTranslation('notif_url_required'));
           return;
         }
 
         const category = DOM.addCategorySelect.value;
-        const title = DOM.addTitleInput.value.trim() || 'Nón liên kết';
-        const creator = DOM.addCreatorInput.value.trim() || 'Link trực tiếp';
+        const title = DOM.addTitleInput.value.trim() || getTranslation('add_default_title');
+        const creator = DOM.addCreatorInput.value.trim() || getTranslation('add_default_creator');
         const tags = [category, 'user-added', 'headwear'];
 
         // Show loading spinner/disabled state
         const originalText = DOM.saveAddBtn.textContent;
         DOM.saveAddBtn.disabled = true;
-        DOM.saveAddBtn.textContent = 'Đang lưu nón...';
+        DOM.saveAddBtn.textContent = getTranslation('add_saving_hat');
 
         try {
           // Call Backend API to add & share the hat
@@ -2625,7 +2890,7 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           if (!result.success) {
-            throw new Error(result.error || 'Không thể lưu nón chia sẻ');
+            throw new Error(result.error || getTranslation('notif_save_hat_error_default'));
           }
 
           const savedHat = result.data;
@@ -2643,7 +2908,7 @@ document.addEventListener('DOMContentLoaded', () => {
           DOM.resolvePreviewContainer.style.display = 'none';
           DOM.resolveStatus.style.display = 'none';
 
-          showNotification('Đã lưu nón và chia sẻ thành công lên hệ thống!');
+          showNotification(getTranslation('notif_add_success'));
 
           // Refresh grid
           const query = state.searchQuery ? state.searchQuery : (state.selectedCategory === 'all' ? 'trendy caps' : state.selectedCategory + ' headwear');
@@ -2651,7 +2916,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (err) {
           console.error('[Add Hat] Error:', err);
-          showNotification(`Lỗi: ${err.message || 'Không thể lưu nón'}`);
+          const errorMsg = err.message || getTranslation('notif_save_hat_error_default');
+          showNotification(getTranslation('notif_error_prefix') + errorMsg);
         } finally {
           DOM.saveAddBtn.disabled = false;
           DOM.saveAddBtn.textContent = originalText;
@@ -2772,7 +3038,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reset results panel
     DOM.resultPlaceholder.innerHTML = `
       <svg viewBox="0 0 24 24" width="64" height="64"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/></svg>
-      <p>Chưa có dữ liệu phân tích. Hãy tải ảnh lên và nhấn "Quét & Phân Tích Bằng AI" ở cột bên trái.</p>
+      <p>${getTranslation('results_placeholder')}</p>
     `;
     DOM.resultPlaceholder.style.display = 'flex';
     DOM.resultContent.style.display = 'none';
@@ -2781,3 +3047,4 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start app
   init();
 });
+

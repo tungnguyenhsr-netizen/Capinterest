@@ -3,6 +3,38 @@
  * Handles AI Scanning animations, API integration (via backend proxy), and rendering analysis results.
  */
 
+function getTranslation(key, replacements = {}) {
+  if (window.AppConfig && typeof window.AppConfig.getTranslation === 'function') {
+    return window.AppConfig.getTranslation(key, replacements);
+  }
+  const fallback = {
+    analyzer_scanning: "AI Đang Phân Tích Thiết Kế...",
+    analyzer_decoding: "AI đang giải mã cấu trúc sợi vải, phối màu và tính toán điểm xu hướng...",
+    analyzer_failed: "Phân tích thất bại",
+    analyzer_check_settings: "Vui lòng kiểm tra lại cấu hình API trong phần cài đặt.",
+    style_default: "Nón Thời Trang",
+    material_default: "Vải hỗn hợp",
+    desc_default: "Không có đánh giá thẩm mỹ.",
+    gauge_level_potential: "Tiềm Năng",
+    gauge_verdict_potential: "Thiết kế độc đáo, có tiềm năng tạo xu hướng mới.",
+    gauge_level_hyper: "Siêu Xu Hướng (Hyper-Trend)",
+    gauge_verdict_hyper: "Thiết kế đang cực kỳ bùng nổ, dẫn đầu xu hướng thời trang streetwear!",
+    gauge_level_trending: "Thịnh Hành (Trending)",
+    gauge_verdict_trending: "Sản phẩm đang được ưa chuộng rộng rãi bởi giới trẻ và cộng đồng fashionista.",
+    gauge_level_niche: "Phong Cách Ngách (Classic/Niche)",
+    gauge_verdict_niche: "Một thiết kế cổ điển, mang tính thẩm mỹ bền vững, phù hợp gu thời trang kén chọn.",
+    error_unknown_ai: "Lỗi không xác định khi kết nối AI",
+    color_copied: "Copied!",
+    click_to_copy_color: "Click để sao chép mã màu",
+    scanner_btn_scan: "Quét & Phân Tích Bằng AI"
+  };
+  let text = fallback[key] || key;
+  for (const [k, v] of Object.entries(replacements)) {
+    text = text.replace(`{${k}}`, v);
+  }
+  return text;
+}
+
 const AIAnalyzer = {
   // Elements
   elements: {
@@ -57,14 +89,14 @@ const AIAnalyzer = {
     this.elements.startScanBtn.disabled = true;
     this.elements.startScanBtn.innerHTML = `
       <div class="spinner" style="border-top-color:#fff; width:16px; height:16px;"></div>
-      AI Đang Phân Tích Thiết Kế...
+      ${getTranslation('analyzer_scanning')}
     `;
     
     // Show placeholder, hide previous results if any
     this.elements.resultPlaceholder.style.display = 'flex';
     this.elements.resultPlaceholder.innerHTML = `
       <div class="spinner" style="width: 40px; height: 40px;"></div>
-      <p>AI đang giải mã cấu trúc sợi vải, phối màu và tính toán điểm xu hướng...</p>
+      <p>${getTranslation('analyzer_decoding')}</p>
     `;
     this.elements.resultContent.style.display = 'none';
 
@@ -94,7 +126,7 @@ const AIAnalyzer = {
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Lỗi không xác định khi kết nối AI');
+        throw new Error(result.error || getTranslation('error_unknown_ai'));
       }
 
       // 3. Stop scanning and render results
@@ -110,14 +142,14 @@ const AIAnalyzer = {
       // Show error in results panel
       this.elements.resultPlaceholder.innerHTML = `
         <svg viewBox="0 0 24 24" width="64" height="64" style="color: var(--accent-pink);"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/></svg>
-        <p style="color: var(--accent-pink); font-weight: 600;">Phân tích thất bại</p>
-        <p style="font-size: 13px;">${error.message}.<br>Vui lòng kiểm tra lại cấu hình API trong phần cài đặt.</p>
+        <p style="color: var(--accent-pink); font-weight: 600;">${getTranslation('analyzer_failed')}</p>
+        <p style="font-size: 13px;">${error.message}.<br>${getTranslation('analyzer_check_settings')}</p>
       `;
     } finally {
       this.elements.startScanBtn.disabled = false;
       this.elements.startScanBtn.innerHTML = `
         <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
-        Quét & Phân Tích Bằng AI
+        ${getTranslation('scanner_btn_scan')}
       `;
     }
   },
@@ -129,30 +161,30 @@ const AIAnalyzer = {
     this.elements.resultContent.style.display = 'flex';
 
     // Set Style & Material
-    this.elements.resStyle.textContent = data.style || 'Nón Thời Trang';
-    this.elements.resMaterial.textContent = data.material || 'Vải hỗn hợp';
-    this.elements.resDesc.textContent = data.aestheticDescription || 'Không có đánh giá thẩm mỹ.';
+    this.elements.resStyle.textContent = data.style || getTranslation('style_default');
+    this.elements.resMaterial.textContent = data.material || getTranslation('material_default');
+    this.elements.resDesc.textContent = data.aestheticDescription || getTranslation('desc_default');
 
     // Animate Trend Score
     const targetScore = data.trendScore || 50;
     this.animateScore(targetScore);
 
     // Setup Trend Level text based on score
-    let levelText = 'Tiềm Năng';
-    let verdictText = 'Thiết kế độc đáo, có tiềm năng tạo xu hướng mới.';
+    let levelText = getTranslation('gauge_level_potential');
+    let verdictText = getTranslation('gauge_verdict_potential');
     let levelColor = 'var(--accent-cyan)';
 
     if (targetScore >= 90) {
-      levelText = 'Siêu Xu Hướng (Hyper-Trend)';
-      verdictText = 'Thiết kế đang cực kỳ bùng nổ, dẫn đầu xu hướng thời trang streetwear!';
+      levelText = getTranslation('gauge_level_hyper');
+      verdictText = getTranslation('gauge_verdict_hyper');
       levelColor = 'var(--accent-pink)';
     } else if (targetScore >= 80) {
-      levelText = 'Thịnh Hành (Trending)';
-      verdictText = 'Sản phẩm đang được ưa chuộng rộng rãi bởi giới trẻ và cộng đồng fashionista.';
+      levelText = getTranslation('gauge_level_trending');
+      verdictText = getTranslation('gauge_verdict_trending');
       levelColor = 'var(--accent-emerald)';
     } else if (targetScore < 70) {
-      levelText = 'Phong Cách Ngách (Classic/Niche)';
-      verdictText = 'Một thiết kế cổ điển, mang tính thẩm mỹ bền vững, phù hợp gu thời trang kén chọn.';
+      levelText = getTranslation('gauge_level_niche');
+      verdictText = getTranslation('gauge_verdict_niche');
       levelColor = 'var(--text-secondary)';
     }
 
@@ -166,7 +198,7 @@ const AIAnalyzer = {
       data.colorPalette.forEach(hex => {
         const swatch = document.createElement('div');
         swatch.className = 'color-swatch';
-        swatch.title = `Click để sao chép mã màu ${hex}`;
+        swatch.title = `${getTranslation('click_to_copy_color')} ${hex}`;
         swatch.innerHTML = `
           <div class="color-dot" style="background-color: ${hex};"></div>
           <span>${hex}</span>
@@ -175,7 +207,7 @@ const AIAnalyzer = {
           navigator.clipboard.writeText(hex).then(() => {
             const span = swatch.querySelector('span');
             const originalText = span.textContent;
-            span.textContent = 'Copied!';
+            span.textContent = getTranslation('color_copied');
             setTimeout(() => {
               span.textContent = originalText;
             }, 1000);

@@ -1,0 +1,21 @@
+# Custom Agent Flow Rules
+
+CRITICAL: For ANY and EVERY user prompt or request (including code changes, optimizations, research, new features, rule updates, or questions), you MUST follow this multi-agent workflow:
+
+1. **Orchestrator Role**:
+   - Act strictly as the Orchestrator / Primary Coordinator.
+   - You MUST NOT edit code directly or run modifying commands. Always delegate tasks to the specialized subagents.
+   - You MUST manage the `implementation_plan.md`, `task.md`, and `walkthrough.md` artifacts.
+   - You MUST always wait for subagents to complete their work and never proceed ahead of them.
+
+2. **Subagent Delegation**:
+   - **project_manager**: Orchestrates UI/UX redesigns, coordinates other subagents, updates release changelogs in `public/index.html`, and handles staging/pushing final code to master.
+   - **code_engineer**: Specialized in backend engineering. Delegates tasks here for editing server routing, Gemini API prompts, database logic (e.g. `server.js` or files under `data/`), query safety, and server optimization.
+   - **uiux_designer**: Specialized in frontend design. Delegates tasks here for CSS layout fixes, premium cyberpunk aesthetics, responsiveness (e.g. media queries), translation audits (`public/index.html` and client-side JS), and fallback SVG updates in `public/app.js`.
+   - **tester_qc**: Specialized in quality control. Invoked to inspect frontend layouts, test mobile responsiveness, audit usability, and verify that changes successfully resolved any issues.
+
+3. **Workflow Execution**:
+   - For every prompt received, analyze the task and update `implementation_plan.md`.
+   - Delegate the implementation to `code_engineer` (for backend) and `uiux_designer` (for frontend).
+   - Once implementation is done, invoke `tester_qc` to run verification and tests (automated and manual).
+   - Only after all subagents complete and `tester_qc` verifies the changes, you may present the final walkthrough and summary to the user.
