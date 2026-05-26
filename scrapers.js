@@ -7,6 +7,63 @@ const HEADERS = {
 };
 
 /**
+ * Domains to blacklist — images sourced from these will be discarded before LLM filtering.
+ * Covers anime/fanart platforms, social feeds, icon/vector sites, and unrelated content hubs.
+ */
+const BLOCKED_DOMAINS = [
+  // Anime / fanart / illustration platforms
+  'pixiv.net', 'i.pximg.net', 'pximg.net',
+  'deviantart.com', 'wikiart.org', 'artstation.com',
+  'zerochan.net', 'danbooru.donmai.us', 'gelbooru.com',
+  'konachan.com', 'yande.re', 'safebooru.org',
+  'mangadex.org', 'myanimelist.net', 'anilist.co',
+  // Icon / vector / clipart
+  'flaticon.com', 'iconfinder.com', 'icons8.com',
+  'svgrepo.com', 'iconscout.com', 'vecteezy.com',
+  'freepik.com', 'shutterstock.com', 'dreamstime.com',
+  'vectorstock.com', 'clipartmax.com', 'openclipart.org',
+  // Social / non-shopping
+  'twitter.com', 'x.com', 'facebook.com', 'instagram.com',
+  'tiktok.com', 'reddit.com', 'tumblr.com',
+  // Other non-relevant
+  'wikimedia.org', 'wikipedia.org', 'w.wiki',
+];
+
+/**
+ * Title keywords that almost always indicate garbage/non-fashion content.
+ */
+const BLOCKED_TITLE_KEYWORDS = [
+  'anime', 'manga', 'cosplay', 'fanart', 'fan art', 'illustration',
+  'character', 'chibi', 'waifu', 'pfp', 'avatar', 'wallpaper',
+  'clipart', 'vector', 'svg', 'icon set', 'logo pack',
+  'download free', 'free png', 'transparent png',
+];
+
+/**
+ * Quick pre-filter: remove items from blacklisted domains or with garbage title keywords.
+ * This runs BEFORE the LLM to cut costs and improve accuracy.
+ */
+export function preFilterItems(items) {
+  return items.filter(item => {
+    const imageUrl = (item.image || item.url || '').toLowerCase();
+    const sourceUrl = (item.url || '').toLowerCase();
+    const title = (item.title || '').toLowerCase();
+
+    // Block by domain
+    const isBlockedDomain = BLOCKED_DOMAINS.some(domain =>
+      imageUrl.includes(domain) || sourceUrl.includes(domain)
+    );
+    if (isBlockedDomain) return false;
+
+    // Block by title keyword
+    const isBlockedTitle = BLOCKED_TITLE_KEYWORDS.some(kw => title.includes(kw));
+    if (isBlockedTitle) return false;
+
+    return true;
+  });
+}
+
+/**
  * Fetch image search JSON internally from DuckDuckGo using search token VQD, returning array of hats.
  * @param {string} query Search query
  * @param {number} page Page number (1-based)

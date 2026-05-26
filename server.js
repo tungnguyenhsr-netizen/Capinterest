@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 import { scrapePinterestWithFirecrawl } from './firecrawl_scraper.js';
-import { fetchDuckDuckGoImages, fetchBingImages } from './scrapers.js';
+import { fetchDuckDuckGoImages, fetchBingImages, preFilterItems } from './scrapers.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -528,7 +528,12 @@ app.get('/api/scrape', async (req, res) => {
     }
   }
 
-  // 5. Apply Google Gemini LLM garbage filter if items were successfully scraped
+  // 5a. Pre-filter: block blacklisted domains & garbage title keywords (fast, no LLM cost)
+  const beforePreFilter = scrapedItems.length;
+  scrapedItems = preFilterItems(scrapedItems);
+  console.log(`[Pre-Filter] Removed ${beforePreFilter - scrapedItems.length} items via domain/keyword blacklist. Remaining: ${scrapedItems.length}`);
+
+  // 5b. Apply Google Gemini LLM garbage filter if items were successfully scraped
   let filteredItems = scrapedItems;
   if (scrapedItems.length > 0) {
     const userApiKey = getGeminiApiKey(req);
@@ -836,14 +841,27 @@ async function filterHatsWithLLM(items, userApiKey) {
       url: item.image || ''
     }));
 
-    const promptText = `You are a fashion curator AI. Analyze the following list of items scraped from the web.
-Each item is represented as a JSON object with an index, a title, and an image URL.
-Determine if each item is a valid hat, cap, beanie, or fashion streetwear apparel item.
-Filter out items that are logos, promotional advertisements, banners, badges, app icons, profile icons, vector clipart, or unrelated images.
+    const promptText = `You are a STRICT fashion image curator AI for a hat/cap discovery platform.
+Analyze the following list of items scraped from the web. Each item has an index, a title, and an image URL.
 
-Return ONLY a JSON array containing the 0-based indices of the valid items that should be kept.
-Do not wrap the output in markdown code blocks like \`\`\`json. Return only the raw JSON array.
-Example output format: [0, 2, 3, 5]
+KEEP an item ONLY if it clearly shows a REAL, WEARABLE hat, cap, beanie, bucket hat, snapback, beret, fedora, or similar headwear — either worn by a real person in a photo or displayed as a real product for sale.
+
+REJECT an item if it matches ANY of these categories:
+- Anime, manga, cartoon, or illustrated/drawn characters (even if wearing hats)
+- Fan art, digital art, paintings, or artwork from Pixiv, DeviantArt, ArtStation, etc.
+- Logos, icons, badges, banners, or promotional/advertising graphics
+- Vector clipart, SVG illustrations, transparent PNGs, or icon packs
+- Social media profile pictures, avatars, or wallpapers
+- Infographics, tutorials, memes, or how-to diagrams
+- Products that are NOT headwear (shoes, bags, shirts, jewelry, etc.)
+- Low-quality, blurry, or irrelevant stock photos where a hat is not the main subject
+- Pinterest UI screenshots, app store listings, or website screenshots
+
+Be aggressive in filtering. When in doubt, REJECT the item.
+
+Return ONLY a JSON array of the 0-based indices of items to KEEP.
+Do NOT wrap in markdown code blocks. Return raw JSON array only.
+Example: [0, 2, 5]
 
 Items:
 ${JSON.stringify(itemsPayload, null, 2)}`;
