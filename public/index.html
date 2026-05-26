@@ -169,7 +169,7 @@
 
       <!-- Section 3: AI Lab (Scanner & Agent Chat) -->
       <section id="ailab-section" class="content-section">
-        <div class="ailab-tab-headers">
+        <div class="ailab-tab-headers" id="ailab-tabs">
           <button class="ailab-tab-btn active" id="ailab-tab-scanner-btn">
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
             <span data-i18n="tab_scanner">Máy Quét AI (Scanner)</span>
@@ -177,6 +177,10 @@
           <button class="ailab-tab-btn" id="ailab-tab-agent-btn">
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="currentColor"/></svg>
             <span data-i18n="tab_agent">AI Design Agent Chat</span>
+          </button>
+          <button class="ailab-tab-btn ailab-tab" id="tab-moodboard-btn">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 4h16v16H4V4zm2 2v12h12V6H6zm3 3h6v2H9V9zm0 4h6v2H9v-2z" fill="currentColor"/></svg>
+            <span data-i18n="tab_moodboard">Bảng ý tưởng (Mood Board)</span>
           </button>
         </div>
 
@@ -332,6 +336,76 @@
                 <div style="display: flex; gap: 10px; width: 100%;">
                   <textarea id="agent-chat-input" data-i18n-placeholder="agent_input_placeholder" placeholder="Mô tả ý tưởng thiết kế nón của bạn ở đây... (Ấn Enter để gửi, Shift+Enter xuống dòng)" style="flex: 1;"></textarea>
                   <button class="cta-btn active" id="agent-send-btn" data-i18n="agent_btn_send">Gửi ý tưởng</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Content 3: Mood Board -->
+        <div id="ailab-moodboard-content" class="ailab-tab-content">
+          <div class="moodboard-container">
+            <!-- Left sidebar: user collection context -->
+            <aside class="liked-context-sidebar">
+              <div class="sidebar-header">
+                <h3 data-i18n="agent_sidebar_title">Bộ sưu tập cảm hứng</h3>
+                <span class="context-count" id="moodboard-context-count">0 <span data-i18n="agent_sidebar_count">nón</span></span>
+              </div>
+              <p class="subtitle" data-i18n="agent_sidebar_subtitle">AI Design Agent sẽ tham khảo các mẫu nón này để nắm bắt gu thẩm mỹ của bạn</p>
+              <div class="liked-context-list" id="moodboard-context-list">
+                <!-- Thumbnail items will be dynamically loaded -->
+              </div>
+            </aside>
+
+            <!-- Moodboard main area -->
+            <div class="moodboard-main">
+              <!-- Toolbar -->
+              <div class="moodboard-toolbar">
+                <div class="toolbar-group">
+                  <button id="mb-tool-select" class="mb-tool-btn active">
+                    <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:middle;margin-right:4px;"><path d="M10.07 14.24l-3.41 3.41L5 16v6h6l-1.66-1.66 3.41-3.41-2.68-2.69zM19 8l-1.41-1.41-2.59 2.59-1.41-1.41L16.17 5H14V3h6v6h-2V6.83l-2.58 2.58-1.42-1.41L19 8z" fill="currentColor"/></svg>
+                    <span data-i18n="mb_toolbar_select">Chọn / Di chuyển</span>
+                  </button>
+                  <button id="mb-tool-link" class="mb-tool-btn">
+                    <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:middle;margin-right:4px;"><path d="M17 7h-4v2h4c1.65 0 3 1.35 3 3s-1.35 3-3 3h-4v2h4c2.76 0 5-2.24 5-5s-2.24-5-5-5zm-6 8H7c-1.65 0-3-1.35-3-3s1.35-3 3-3h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-2zm-3-4h8v2H8v-2z" fill="currentColor"/></svg>
+                    <span data-i18n="mb_toolbar_link">Vẽ liên kết</span>
+                  </button>
+                </div>
+                <div class="toolbar-group">
+                  <button id="mb-tool-zoom-out" class="mb-tool-btn" title="Zoom Out">
+                    <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 13H5v-2h14v2z" fill="currentColor"/></svg>
+                  </button>
+                  <span id="mb-zoom-level" class="zoom-level-indicator">100%</span>
+                  <button id="mb-tool-zoom-in" class="mb-tool-btn" title="Zoom In">
+                    <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>
+                  </button>
+                  <button id="mb-tool-zoom-reset" class="mb-tool-btn" title="Reset Zoom">
+                    <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/></svg>
+                  </button>
+                </div>
+                <div class="toolbar-group">
+                  <button id="mb-tool-clear" class="mb-tool-btn warning-btn">
+                    <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:middle;margin-right:4px;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
+                    <span data-i18n="mb_toolbar_clear">Xóa bảng</span>
+                  </button>
+                </div>
+                <button id="mb-tool-analyze" class="mb-tool-btn cta-btn active">
+                  <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:middle;margin-right:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
+                  <span data-i18n="mb_toolbar_analyze">Phân tích cụm AI</span>
+                </button>
+              </div>
+
+              <!-- Viewport -->
+              <div id="moodboard-canvas-viewport" class="moodboard-canvas-viewport">
+                <!-- Grid Canvas -->
+                <div id="moodboard-canvas" class="moodboard-canvas">
+                  <!-- SVG overlay -->
+                  <svg id="moodboard-svg-overlay" class="moodboard-svg-overlay"></svg>
+                  
+                  <!-- Empty board message -->
+                  <div id="moodboard-empty-msg" class="moodboard-empty-msg" data-i18n="mb_empty_board">
+                    Kéo thả nón từ thanh bên hoặc click vào để thêm vào bảng ý tưởng
+                  </div>
                 </div>
               </div>
             </div>

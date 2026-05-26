@@ -76,7 +76,19 @@ document.addEventListener('DOMContentLoaded', () => {
         url: '#',
         tags: ['beanie', 'knit', 'wool', 'sage-green']
       }
-    ]
+    ],
+    moodboard: {
+      nodes: [],
+      links: [],
+      mode: 'select', // 'select' or 'link'
+      panX: 0,
+      panY: 0,
+      zoom: 1.0,
+      draggedNodeId: null,
+      isPanning: false,
+      linkStartNodeId: null,
+      tempLinkEnd: null
+    }
   };
 
   // DOM Selection
@@ -205,7 +217,25 @@ document.addEventListener('DOMContentLoaded', () => {
     settingsLangSelect: document.getElementById('settings-lang-select'),
     chatReferenceContainer: document.getElementById('chat-reference-container'),
     chatReferenceTitle: document.getElementById('chat-reference-title'),
-    chatReferenceClear: document.getElementById('chat-reference-clear')
+    chatReferenceClear: document.getElementById('chat-reference-clear'),
+
+    // Moodboard DOM elements
+    tabMoodboardBtn: document.getElementById('tab-moodboard-btn'),
+    moodboardContent: document.getElementById('ailab-moodboard-content'),
+    moodboardContextList: document.getElementById('moodboard-context-list'),
+    moodboardContextCount: document.getElementById('moodboard-context-count'),
+    mbToolSelect: document.getElementById('mb-tool-select'),
+    mbToolLink: document.getElementById('mb-tool-link'),
+    mbToolZoomIn: document.getElementById('mb-tool-zoom-in'),
+    mbToolZoomOut: document.getElementById('mb-tool-zoom-out'),
+    mbToolZoomReset: document.getElementById('mb-tool-zoom-reset'),
+    mbToolClear: document.getElementById('mb-tool-clear'),
+    mbToolAnalyze: document.getElementById('mb-tool-analyze'),
+    mbZoomLevel: document.getElementById('mb-zoom-level'),
+    moodboardCanvasViewport: document.getElementById('moodboard-canvas-viewport'),
+    moodboardCanvas: document.getElementById('moodboard-canvas'),
+    moodboardSvgOverlay: document.getElementById('moodboard-svg-overlay'),
+    moodboardEmptyMsg: document.getElementById('moodboard-empty-msg')
   };
 
   const TRANSLATIONS = {
@@ -253,6 +283,12 @@ document.addEventListener('DOMContentLoaded', () => {
       // AI Lab Tabs
       tab_scanner: "Máy Quét AI (Scanner)",
       tab_agent: "AI Design Agent Chat",
+      tab_moodboard: "Bảng ý tưởng (Mood Board)",
+      mb_toolbar_select: "Chọn / Di chuyển",
+      mb_toolbar_link: "Vẽ liên kết",
+      mb_toolbar_clear: "Xóa bảng",
+      mb_toolbar_analyze: "Phân tích cụm AI",
+      mb_empty_board: "Kéo thả nón từ thanh bên hoặc click vào để thêm vào bảng ý tưởng",
       
       // Scanner
       scanner_title: "Trình Quét Thiết Kế (AI Scanner)",
@@ -511,6 +547,12 @@ document.addEventListener('DOMContentLoaded', () => {
       // AI Lab Tabs
       tab_scanner: "AI Scanner",
       tab_agent: "AI Design Agent Chat",
+      tab_moodboard: "Mood Board",
+      mb_toolbar_select: "Select / Pan",
+      mb_toolbar_link: "Draw Link",
+      mb_toolbar_clear: "Clear Board",
+      mb_toolbar_analyze: "AI Cluster Analyze",
+      mb_empty_board: "Drag and drop hats from sidebar or click them to add to the mood board",
       
       // Scanner
       scanner_title: "Design Scanner (AI Scanner)",
@@ -774,6 +816,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (agentContextCountEl) {
       agentContextCountEl.innerHTML = `${count} <span data-i18n="agent_sidebar_count">${dict.agent_sidebar_count}</span>`;
     }
+    const moodboardContextCountEl = document.getElementById('moodboard-context-count');
+    if (moodboardContextCountEl) {
+      moodboardContextCountEl.innerHTML = `${count} <span data-i18n="agent_sidebar_count">${dict.agent_sidebar_count}</span>`;
+    }
 
     // Re-render feed/grid and collection immediately
     if (state.currentFeedItems && state.currentFeedItems.length > 0) {
@@ -785,6 +831,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateChatReferenceUI();
     updateAuthUI();
     renderChatContext();
+    renderMoodboardContext();
   }
 
   // API Request Helper
@@ -1495,6 +1542,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Load and sync collection
     await syncCollection();
+
+    // Load saved moodboard state
+    loadMoodboard();
     
     // Start polling collection if authenticated
     if (state.auth.token) {
@@ -2702,20 +2752,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // AI Lab Sub-Tab Toggles
-    if (DOM.tabScannerBtn && DOM.tabAgentBtn && DOM.scannerContent && DOM.agentContent) {
+    if (DOM.tabScannerBtn && DOM.tabAgentBtn && DOM.tabMoodboardBtn && DOM.scannerContent && DOM.agentContent && DOM.moodboardContent) {
       DOM.tabScannerBtn.addEventListener('click', () => {
         DOM.tabScannerBtn.classList.add('active');
         DOM.tabAgentBtn.classList.remove('active');
+        DOM.tabMoodboardBtn.classList.remove('active');
         DOM.scannerContent.classList.add('active');
         DOM.agentContent.classList.remove('active');
+        DOM.moodboardContent.classList.remove('active');
       });
 
       DOM.tabAgentBtn.addEventListener('click', () => {
         DOM.tabAgentBtn.classList.add('active');
         DOM.tabScannerBtn.classList.remove('active');
+        DOM.tabMoodboardBtn.classList.remove('active');
         DOM.agentContent.classList.add('active');
         DOM.scannerContent.classList.remove('active');
+        DOM.moodboardContent.classList.remove('active');
         renderChatContext();
+      });
+
+      DOM.tabMoodboardBtn.addEventListener('click', () => {
+        DOM.tabMoodboardBtn.classList.add('active');
+        DOM.tabScannerBtn.classList.remove('active');
+        DOM.tabAgentBtn.classList.remove('active');
+        DOM.moodboardContent.classList.add('active');
+        DOM.scannerContent.classList.remove('active');
+        DOM.agentContent.classList.remove('active');
+        renderMoodboardContext();
+        setTimeout(() => {
+          drawConnections();
+        }, 100);
       });
     }
 
@@ -2996,6 +3063,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     });
+
+    // Initialize Mood Board listeners
+    initMoodboardListeners();
   }
 
   function handleUploadedFile(file) {
@@ -3042,6 +3112,723 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     DOM.resultPlaceholder.style.display = 'flex';
     DOM.resultContent.style.display = 'none';
+  }
+
+  // ==========================================================================
+  // Cybernetic Mood Board Implementation
+  // ==========================================================================
+  
+  function initMoodboardListeners() {
+    if (!DOM.moodboardCanvasViewport) return;
+
+    // Load saved data
+    loadMoodboard();
+    updateCanvasTransform();
+    updateZoomIndicator();
+    
+    // Initial rendering of nodes
+    state.moodboard.nodes.forEach(node => {
+      renderNode(node);
+    });
+    
+    // Toggle Select Mode
+    DOM.mbToolSelect.addEventListener('click', () => {
+      state.moodboard.mode = 'select';
+      DOM.mbToolSelect.classList.add('active');
+      DOM.mbToolLink.classList.remove('active');
+      
+      // Clear pending link if any
+      state.moodboard.linkStartNodeId = null;
+      state.moodboard.tempLinkEnd = null;
+      document.querySelectorAll('.moodboard-node').forEach(el => el.classList.remove('selected-origin'));
+      drawConnections();
+    });
+
+    // Toggle Link Mode
+    DOM.mbToolLink.addEventListener('click', () => {
+      state.moodboard.mode = 'link';
+      DOM.mbToolLink.classList.add('active');
+      DOM.mbToolSelect.classList.remove('active');
+    });
+
+    // Zoom Buttons
+    DOM.mbToolZoomIn.addEventListener('click', () => {
+      adjustZoom(1.2);
+    });
+
+    DOM.mbToolZoomOut.addEventListener('click', () => {
+      adjustZoom(1 / 1.2);
+    });
+
+    DOM.mbToolZoomReset.addEventListener('click', () => {
+      state.moodboard.zoom = 1.0;
+      state.moodboard.panX = 0;
+      state.moodboard.panY = 0;
+      updateCanvasTransform();
+      updateZoomIndicator();
+      drawConnections();
+      saveMoodboard();
+    });
+
+    // Clear Board
+    DOM.mbToolClear.addEventListener('click', () => {
+      const confirmMsg = state.lang === 'vi' 
+        ? "Bạn có chắc chắn muốn xóa toàn bộ bảng ý tưởng?" 
+        : "Are you sure you want to clear the entire mood board?";
+      if (confirm(confirmMsg)) {
+        state.moodboard.nodes = [];
+        state.moodboard.links = [];
+        DOM.moodboardCanvas.querySelectorAll('.moodboard-node').forEach(el => el.remove());
+        drawConnections();
+        updateEmptyMsgVisibility();
+        saveMoodboard();
+      }
+    });
+
+    function generateClusterAnalyzePrompt() {
+      const isVi = state.lang === 'vi';
+      let nodesText = '';
+      state.moodboard.nodes.forEach(node => {
+        if (node.type === 'hat') {
+          const creatorStr = node.creator ? ` (@${node.creator})` : '';
+          if (isVi) {
+            nodesText += `- Nón: "${node.title}"${creatorStr}\n`;
+            if (node.text) {
+              nodesText += `  Ghi chú: "${node.text}"\n`;
+            }
+          } else {
+            nodesText += `- Hat: "${node.title}"${creatorStr}\n`;
+            if (node.text) {
+              nodesText += `  Note: "${node.text}"\n`;
+            }
+          }
+        } else if (node.type === 'sticky') {
+          if (isVi) {
+            nodesText += `- Ghi chú dán: "${node.text}"\n`;
+          } else {
+            nodesText += `- Sticky Note: "${node.text}"\n`;
+          }
+        }
+      });
+
+      let linksText = '';
+      state.moodboard.links.forEach(link => {
+        const sourceNode = state.moodboard.nodes.find(n => n.id === link.sourceId);
+        const targetNode = state.moodboard.nodes.find(n => n.id === link.targetId);
+        if (sourceNode && targetNode) {
+          const getDisplayName = (n) => {
+            if (n.type === 'hat') {
+              return `"${n.title}"`;
+            } else {
+              return isVi ? `Ghi chú "${n.text}"` : `Sticky Note "${n.text}"`;
+            }
+          };
+          const sourceName = getDisplayName(sourceNode);
+          const targetName = getDisplayName(targetNode);
+          if (isVi) {
+            linksText += `- ${sourceName} liên kết với ${targetName}\n`;
+          } else {
+            linksText += `- ${sourceName} is connected to ${targetName}\n`;
+          }
+        }
+      });
+
+      if (!linksText) {
+        linksText = isVi ? "(Không có đường liên kết nào)" : "(No connections)";
+      }
+
+      let prompt = '';
+      if (isVi) {
+        prompt = `Hãy phân tích cụm thiết kế nón sau đây từ Bảng ý tưởng (Mood Board) của tôi:\n\n` +
+                 `**Danh sách mẫu nón và ghi chú:**\n${nodesText}\n` +
+                 `**Các liên kết kết nối:**\n${linksText}\n\n` +
+                 `Hãy phân tích các mẫu thiết kế trên, tìm ra sự tương đồng và định hướng thời trang tiềm năng của cụm này. Sau đó, gợi ý một ý tưởng thiết kế nón lai (hybrid) mới lạ kết hợp các yếu tố trên, kèm theo mã nguồn SVG vẽ logo biểu tượng Cyberpunk đặc trưng cho nón mới này ở cuối phản hồi (đặt trong tag \`\`\`xml hoặc \`\`\`html với viewBox 400x400).`;
+      } else {
+        prompt = `Please analyze the following hat design cluster from my Mood Board:\n\n` +
+                 `**Hats & Notes:**\n${nodesText}\n` +
+                 `**Connection trace links:**\n${linksText}\n\n` +
+                 `Please analyze these designs, find their similarities and potential fashion direction. Then suggest a new hybrid design concept combining these elements, and provide a unique Cyberpunk SVG logo design for this new concept at the end of your response (wrapped in a clean \`\`\`xml or \`\`\`html block with viewBox 400x400).`;
+      }
+
+      return prompt;
+    }
+
+    // AI Cluster Analyze Button
+    DOM.mbToolAnalyze.addEventListener('click', async () => {
+      if (state.moodboard.nodes.length === 0) {
+        showNotification(state.lang === 'vi' ? 'Bảng ý tưởng đang trống!' : 'The mood board is empty!');
+        return;
+      }
+      
+      const prompt = generateClusterAnalyzePrompt();
+      
+      // Switch to Agent Chat sub-tab
+      DOM.tabAgentBtn.click();
+      
+      // Populate chat input and trigger sendMessage
+      DOM.agentChatInput.value = prompt;
+      
+      // Auto-focus chat input
+      DOM.agentChatInput.focus();
+      
+      // Dispatch Enter event or call agentSendBtn click handler
+      DOM.agentSendBtn.click();
+    });
+
+    // Canvas Panning Logic
+    let isMouseDown = false;
+    let startX, startY;
+
+    DOM.moodboardCanvasViewport.addEventListener('mousedown', (e) => {
+      // If clicking inside a node or toolbar button, ignore
+      if (e.target.closest('.moodboard-node') || e.target.closest('.mb-tool-btn')) return;
+
+      isMouseDown = true;
+      startX = e.clientX - state.moodboard.panX;
+      startY = e.clientY - state.moodboard.panY;
+      DOM.moodboardCanvasViewport.style.cursor = 'grabbing';
+      
+      // Clear pending link if clicking empty canvas in link mode
+      if (state.moodboard.linkStartNodeId) {
+        state.moodboard.linkStartNodeId = null;
+        state.moodboard.tempLinkEnd = null;
+        document.querySelectorAll('.moodboard-node').forEach(el => el.classList.remove('selected-origin'));
+        drawConnections();
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isMouseDown) {
+        state.moodboard.panX = e.clientX - startX;
+        state.moodboard.panY = e.clientY - startY;
+        updateCanvasTransform();
+      }
+      
+      // Track mouse position for link drawing overlay if drawing
+      if (state.moodboard.mode === 'link' && state.moodboard.linkStartNodeId) {
+        const rect = DOM.moodboardCanvasViewport.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        state.moodboard.tempLinkEnd = {
+          x: (mouseX - state.moodboard.panX) / state.moodboard.zoom,
+          y: (mouseY - state.moodboard.panY) / state.moodboard.zoom
+        };
+        drawConnections();
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isMouseDown) {
+        isMouseDown = false;
+        DOM.moodboardCanvasViewport.style.cursor = 'grab';
+        saveMoodboard();
+      }
+    });
+
+    // Canvas Zoom (Wheel Scroll)
+    DOM.moodboardCanvasViewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = 1.1;
+      let newZoom = state.moodboard.zoom;
+      if (e.deltaY < 0) {
+        newZoom *= zoomFactor;
+      } else {
+        newZoom /= zoomFactor;
+      }
+      
+      newZoom = Math.max(0.2, Math.min(3.0, newZoom));
+      
+      const rect = DOM.moodboardCanvasViewport.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      const canvasX = (mouseX - state.moodboard.panX) / state.moodboard.zoom;
+      const canvasY = (mouseY - state.moodboard.panY) / state.moodboard.zoom;
+      
+      state.moodboard.zoom = newZoom;
+      state.moodboard.panX = mouseX - canvasX * newZoom;
+      state.moodboard.panY = mouseY - canvasY * newZoom;
+      
+      updateCanvasTransform();
+      updateZoomIndicator();
+      drawConnections();
+      saveMoodboard();
+    }, { passive: false });
+
+    // Drag over / leave / drop for dropping hats from the sidebar
+    DOM.moodboardCanvasViewport.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      DOM.moodboardCanvasViewport.classList.add('dragover');
+    });
+
+    DOM.moodboardCanvasViewport.addEventListener('dragleave', () => {
+      DOM.moodboardCanvasViewport.classList.remove('dragover');
+    });
+
+    DOM.moodboardCanvasViewport.addEventListener('drop', (e) => {
+      e.preventDefault();
+      DOM.moodboardCanvasViewport.classList.remove('dragover');
+      try {
+        const rawData = e.dataTransfer.getData('application/json');
+        if (!rawData) return;
+        const item = JSON.parse(rawData);
+        
+        const rect = DOM.moodboardCanvasViewport.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const canvasX = (mouseX - state.moodboard.panX) / state.moodboard.zoom;
+        const canvasY = (mouseY - state.moodboard.panY) / state.moodboard.zoom;
+        
+        addNodeToMoodboard({
+          type: 'hat',
+          x: canvasX - 70,
+          y: canvasY - 70,
+          title: item.title,
+          creator: item.creator,
+          image: item.image,
+          refId: item.id || item.image
+        });
+      } catch (err) {
+        console.error('Error dropping node on moodboard:', err);
+      }
+    });
+
+    // Double click viewport to create sticky note
+    DOM.moodboardCanvasViewport.addEventListener('dblclick', (e) => {
+      if (e.target === DOM.moodboardCanvasViewport || e.target === DOM.moodboardCanvas) {
+        const rect = DOM.moodboardCanvasViewport.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const canvasX = (mouseX - state.moodboard.panX) / state.moodboard.zoom;
+        const canvasY = (mouseY - state.moodboard.panY) / state.moodboard.zoom;
+        
+        addNodeToMoodboard({
+          type: 'sticky',
+          x: canvasX - 75,
+          y: canvasY - 40,
+          text: state.lang === 'vi' ? 'Nhấp đúp để chỉnh sửa' : 'Double click to edit'
+        });
+      }
+    });
+    
+    // Draw initial SVG lines
+    setTimeout(() => {
+      drawConnections();
+      updateEmptyMsgVisibility();
+    }, 200);
+  }
+
+  function adjustZoom(factor) {
+    let newZoom = state.moodboard.zoom * factor;
+    newZoom = Math.max(0.2, Math.min(3.0, newZoom));
+    
+    // Zoom centered around viewport middle
+    const rect = DOM.moodboardCanvasViewport.getBoundingClientRect();
+    const midX = rect.width / 2;
+    const midY = rect.height / 2;
+    
+    const canvasX = (midX - state.moodboard.panX) / state.moodboard.zoom;
+    const canvasY = (midY - state.moodboard.panY) / state.moodboard.zoom;
+    
+    state.moodboard.zoom = newZoom;
+    state.moodboard.panX = midX - canvasX * newZoom;
+    state.moodboard.panY = midY - canvasY * newZoom;
+    
+    updateCanvasTransform();
+    updateZoomIndicator();
+    drawConnections();
+    saveMoodboard();
+  }
+
+  function updateCanvasTransform() {
+    if (DOM.moodboardCanvas) {
+      DOM.moodboardCanvas.style.transform = `translate(${state.moodboard.panX}px, ${state.moodboard.panY}px) scale(${state.moodboard.zoom})`;
+    }
+  }
+
+  function updateZoomIndicator() {
+    if (DOM.mbZoomLevel) {
+      DOM.mbZoomLevel.textContent = `${Math.round(state.moodboard.zoom * 100)}%`;
+    }
+  }
+
+  function renderMoodboardContext() {
+    if (!DOM.moodboardContextList) return;
+
+    const count = state.likedItemsObjects.length;
+    const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.vi;
+    if (DOM.moodboardContextCount) {
+      DOM.moodboardContextCount.innerHTML = `${count} <span data-i18n="agent_sidebar_count">${dict.agent_sidebar_count}</span>`;
+    }
+
+    DOM.moodboardContextList.innerHTML = '';
+    if (count === 0) {
+      DOM.moodboardContextList.innerHTML = `
+        <div style="text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.9rem;" data-i18n="agent_sidebar_empty">
+          ${dict.agent_sidebar_empty}
+        </div>
+      `;
+      return;
+    }
+
+    state.likedItemsObjects.forEach(item => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'context-thumb-item';
+      itemEl.style.cursor = 'pointer';
+      itemEl.title = `${item.title} by @${item.creator || 'streetwear'}`;
+      itemEl.draggable = true;
+      
+      itemEl.innerHTML = `
+        <img src="${item.image}" alt="${item.title}">
+      `;
+      
+      // Dragstart event
+      itemEl.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('application/json', JSON.stringify(item));
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+      
+      // Click event adds it to center of viewport
+      itemEl.addEventListener('click', () => {
+        const rect = DOM.moodboardCanvasViewport.getBoundingClientRect();
+        const mouseX = rect.width / 2;
+        const mouseY = rect.height / 2;
+        
+        const canvasX = (mouseX - state.moodboard.panX) / state.moodboard.zoom;
+        const canvasY = (mouseY - state.moodboard.panY) / state.moodboard.zoom;
+        
+        addNodeToMoodboard({
+          type: 'hat',
+          x: canvasX - 70,
+          y: canvasY - 70,
+          title: item.title,
+          creator: item.creator,
+          image: item.image,
+          refId: item.id || item.image
+        });
+      });
+      
+      DOM.moodboardContextList.appendChild(itemEl);
+    });
+  }
+
+  function addNodeToMoodboard(nodeData) {
+    const node = {
+      id: 'mb-node-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      type: nodeData.type,
+      x: nodeData.x,
+      y: nodeData.y,
+      title: nodeData.title || '',
+      creator: nodeData.creator || '',
+      image: nodeData.image || '',
+      refId: nodeData.refId || null,
+      text: nodeData.text || ''
+    };
+    
+    state.moodboard.nodes.push(node);
+    renderNode(node);
+    updateEmptyMsgVisibility();
+    saveMoodboard();
+  }
+
+  function renderNode(node) {
+    const existing = document.getElementById(node.id);
+    if (existing) existing.remove();
+    
+    const nodeEl = document.createElement('div');
+    nodeEl.id = node.id;
+    nodeEl.style.left = `${node.x}px`;
+    nodeEl.style.top = `${node.y}px`;
+    
+    if (node.type === 'hat') {
+      nodeEl.className = 'moodboard-node hat-node';
+      if (state.moodboard.linkStartNodeId === node.id) {
+        nodeEl.classList.add('selected-origin');
+      }
+      
+      const noteHtml = node.text ? `<div class="node-note" style="border-top: 1px dashed var(--accent-cyan); padding: 6px; font-size: 0.72rem; color: var(--accent-cyan); font-family: monospace; white-space: pre-wrap; word-break: break-word;">${node.text}</div>` : '';
+      
+      nodeEl.innerHTML = `
+        <button class="node-close-btn">&times;</button>
+        <div class="node-img-container">
+          <img src="${node.image}" alt="${node.title}">
+        </div>
+        <div class="node-title-container">
+          <span class="node-title">${node.title}</span>
+          <span class="node-creator">@${node.creator || 'streetwear'}</span>
+        </div>
+        ${noteHtml}
+      `;
+    } else if (node.type === 'sticky') {
+      nodeEl.className = 'moodboard-node sticky-node';
+      nodeEl.innerHTML = `
+        <button class="node-close-btn" style="top: 2px; right: 2px;">&times;</button>
+        <div class="sticky-header">TERMINAL NOTE</div>
+        <div class="sticky-content">${node.text || 'DOUBLE CLICK TO EDIT'}</div>
+      `;
+    }
+    
+    // Close button
+    nodeEl.querySelector('.node-close-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteNode(node.id);
+    });
+    
+    // Double click to edit note
+    nodeEl.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      openStickyEditor(node);
+    });
+    
+    makeNodeDraggable(nodeEl, node);
+    DOM.moodboardCanvas.appendChild(nodeEl);
+  }
+
+  function deleteNode(nodeId) {
+    state.moodboard.nodes = state.moodboard.nodes.filter(n => n.id !== nodeId);
+    state.moodboard.links = state.moodboard.links.filter(l => l.sourceId !== nodeId && l.targetId !== nodeId);
+    
+    const nodeEl = document.getElementById(nodeId);
+    if (nodeEl) nodeEl.remove();
+    
+    if (state.moodboard.linkStartNodeId === nodeId) {
+      state.moodboard.linkStartNodeId = null;
+      state.moodboard.tempLinkEnd = null;
+    }
+    
+    drawConnections();
+    updateEmptyMsgVisibility();
+    saveMoodboard();
+  }
+
+  function makeNodeDraggable(nodeEl, nodeData) {
+    let dragNode = null;
+    let nodeStartX, nodeStartY;
+
+    nodeEl.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.node-close-btn')) return;
+      
+      // If in Link drawing mode
+      if (state.moodboard.mode === 'link') {
+        e.stopPropagation();
+        handleLinkModeClick(nodeData.id);
+        return;
+      }
+      
+      e.stopPropagation();
+      dragNode = nodeData;
+      nodeStartX = e.clientX / state.moodboard.zoom - nodeData.x;
+      nodeStartY = e.clientY / state.moodboard.zoom - nodeData.y;
+      nodeEl.classList.add('dragging');
+    });
+
+    const moveHandler = (e) => {
+      if (!dragNode || dragNode.id !== nodeData.id) return;
+      let newX = e.clientX / state.moodboard.zoom - nodeStartX;
+      let newY = e.clientY / state.moodboard.zoom - nodeStartY;
+      
+      // Clamp coordinates to stay within a reasonable canvas area
+      newX = Math.max(0, Math.min(3000 - 150, newX));
+      newY = Math.max(0, Math.min(3000 - 200, newY));
+      
+      dragNode.x = newX;
+      dragNode.y = newY;
+      nodeEl.style.left = `${newX}px`;
+      nodeEl.style.top = `${newY}px`;
+      
+      drawConnections();
+    };
+
+    const upHandler = () => {
+      if (dragNode && dragNode.id === nodeData.id) {
+        nodeEl.classList.remove('dragging');
+        dragNode = null;
+        saveMoodboard();
+      }
+      window.removeEventListener('mousemove', moveHandler);
+      window.removeEventListener('mouseup', upHandler);
+    };
+
+    nodeEl.addEventListener('mousedown', () => {
+      if (state.moodboard.mode !== 'link') {
+        window.addEventListener('mousemove', moveHandler);
+        window.addEventListener('mouseup', upHandler);
+      }
+    });
+  }
+
+  function handleLinkModeClick(nodeId) {
+    if (!state.moodboard.linkStartNodeId) {
+      // Start drawing link
+      state.moodboard.linkStartNodeId = nodeId;
+      const nodeEl = document.getElementById(nodeId);
+      if (nodeEl) nodeEl.classList.add('selected-origin');
+    } else {
+      // Complete drawing link
+      const sourceId = state.moodboard.linkStartNodeId;
+      const targetId = nodeId;
+      
+      if (sourceId !== targetId) {
+        // Check if connection already exists
+        const exists = state.moodboard.links.some(l => 
+          (l.sourceId === sourceId && l.targetId === targetId) ||
+          (l.sourceId === targetId && l.targetId === sourceId)
+        );
+        
+        if (!exists) {
+          state.moodboard.links.push({ sourceId, targetId });
+        }
+      }
+      
+      // Reset drawing state
+      state.moodboard.linkStartNodeId = null;
+      state.moodboard.tempLinkEnd = null;
+      document.querySelectorAll('.moodboard-node').forEach(el => el.classList.remove('selected-origin'));
+      drawConnections();
+      saveMoodboard();
+    }
+  }
+
+  function getNodeCenter(node) {
+    const nodeEl = document.getElementById(node.id);
+    if (!nodeEl) return { x: node.x + 70, y: node.y + 70 };
+    const w = nodeEl.offsetWidth || (node.type === 'hat' ? 140 : 150);
+    const h = nodeEl.offsetHeight || (node.type === 'hat' ? 192 : 100);
+    return {
+      x: node.x + w / 2,
+      y: node.y + h / 2
+    };
+  }
+
+  function drawConnections() {
+    if (!DOM.moodboardSvgOverlay) return;
+    DOM.moodboardSvgOverlay.innerHTML = '';
+    
+    state.moodboard.links.forEach(link => {
+      const sourceNode = state.moodboard.nodes.find(n => n.id === link.sourceId);
+      const targetNode = state.moodboard.nodes.find(n => n.id === link.targetId);
+      if (!sourceNode || !targetNode) return;
+      
+      const p1 = getNodeCenter(sourceNode);
+      const p2 = getNodeCenter(targetNode);
+      
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const len = Math.sqrt(dx*dx + dy*dy);
+      
+      let pathData;
+      if (len > 0) {
+        const nx = -dy / len;
+        const ny = dx / len;
+        const offset = Math.min(50, len * 0.15);
+        const cx = (p1.x + p2.x) / 2 + nx * offset;
+        const cy = (p1.y + p2.y) / 2 + ny * offset;
+        pathData = `M ${p1.x} ${p1.y} Q ${cx} ${cy} ${p2.x} ${p2.y}`;
+      } else {
+        pathData = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
+      }
+      
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', pathData);
+      DOM.moodboardSvgOverlay.appendChild(path);
+    });
+    
+    if (state.moodboard.linkStartNodeId && state.moodboard.tempLinkEnd) {
+      const sourceNode = state.moodboard.nodes.find(n => n.id === state.moodboard.linkStartNodeId);
+      if (sourceNode) {
+        const p1 = getNodeCenter(sourceNode);
+        const p2 = state.moodboard.tempLinkEnd;
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`);
+        path.setAttribute('class', 'pending-link');
+        DOM.moodboardSvgOverlay.appendChild(path);
+      }
+    }
+  }
+
+  function updateEmptyMsgVisibility() {
+    if (!DOM.moodboardEmptyMsg) return;
+    if (state.moodboard.nodes.length === 0) {
+      DOM.moodboardEmptyMsg.style.display = 'block';
+    } else {
+      DOM.moodboardEmptyMsg.style.display = 'none';
+    }
+  }
+
+  function openStickyEditor(node) {
+    const editorOverlay = document.createElement('div');
+    editorOverlay.className = 'sticky-editor-overlay';
+    
+    const titleText = node.type === 'hat' 
+      ? (state.lang === 'vi' ? 'CHÚ THÍCH CẢM HỨNG NÓN' : 'HAT INSPIRATION NOTE')
+      : (state.lang === 'vi' ? 'CHỈNH SỬA GHI CHÚ' : 'EDIT TERMINAL NOTE');
+      
+    editorOverlay.innerHTML = `
+      <div class="sticky-editor-card">
+        <h3>${titleText}</h3>
+        <textarea id="sticky-textarea" placeholder="${state.lang === 'vi' ? 'Nhập ghi chú ý tưởng tại đây...' : 'Enter your design note here...'}">${node.text || ''}</textarea>
+        <div class="sticky-editor-actions">
+          <button class="sticky-editor-cancel" id="sticky-cancel-btn">${state.lang === 'vi' ? 'Hủy bỏ' : 'Cancel'}</button>
+          <button class="sticky-editor-save" id="sticky-save-btn">${state.lang === 'vi' ? 'Lưu lại' : 'Save'}</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(editorOverlay);
+    const textarea = editorOverlay.querySelector('#sticky-textarea');
+    textarea.focus();
+    textarea.select();
+    
+    editorOverlay.querySelector('#sticky-cancel-btn').addEventListener('click', () => {
+      editorOverlay.remove();
+    });
+    
+    editorOverlay.querySelector('#sticky-save-btn').addEventListener('click', () => {
+      node.text = textarea.value.trim();
+      renderNode(node);
+      drawConnections();
+      saveMoodboard();
+      editorOverlay.remove();
+    });
+    
+    editorOverlay.querySelector('.sticky-editor-card').addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  function loadMoodboard() {
+    try {
+      const saved = localStorage.getItem('capinterest_moodboard_data');
+      if (saved) {
+        const data = JSON.parse(saved);
+        state.moodboard.nodes = data.nodes || [];
+        state.moodboard.links = data.links || [];
+        state.moodboard.panX = data.panX ?? 0;
+        state.moodboard.panY = data.panY ?? 0;
+        state.moodboard.zoom = data.zoom ?? 1.0;
+      }
+    } catch (e) {
+      console.error('Failed to load moodboard from localStorage:', e);
+    }
+  }
+
+  function saveMoodboard() {
+    try {
+      const data = {
+        nodes: state.moodboard.nodes,
+        links: state.moodboard.links,
+        panX: state.moodboard.panX,
+        panY: state.moodboard.panY,
+        zoom: state.moodboard.zoom
+      };
+      localStorage.setItem('capinterest_moodboard_data', JSON.stringify(data));
+    } catch (e) {
+      console.error('Failed to save moodboard to localStorage:', e);
+    }
   }
 
   // Start app

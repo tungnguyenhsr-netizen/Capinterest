@@ -8,6 +8,8 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+import { scrapePinterestWithFirecrawl } from './firecrawl_scraper.js';
+import { fetchDuckDuckGoImages, fetchBingImages } from './scrapers.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -452,101 +454,125 @@ app.get('/api/scrape', async (req, res) => {
     return res.json({ success: true, source: 'cache', data: paginatedCache });
   }
 
-  // Cache miss or not enough items - check credit limit
-  const canScrape = checkSerperLimit();
-  if (!canScrape) {
-    console.warn(`[Limit Reached] Serper limit reached. Serving fallback cache.`);
-    const fallbackResults = matchedHats.length > 0 ? matchedHats : cachedHats.slice(0, 15);
-    const paginatedFallback = fallbackResults.slice(startIndex, startIndex + itemsPerPage);
-    return res.json({ 
-      success: true, 
-      source: 'fallback-cache', 
-      data: paginatedFallback,
-      info: 'Credit limit reached. Showing results from cache.' 
-    });
-  }
+  let scrapedItems = [];
+  let source = '';
 
+  // 1. Primary engine: DuckDuckGo scraper first
+  console.log(`[Scraper Flow] Trying DuckDuckGo scraper for: "${query}", page ${page}`);
   try {
-    const [googleResults, pinterestResults] = await Promise.all([
-      fetchGoogleImages(query, page).catch(err => {
-        console.warn('Google fetching failed:', err.message);
-        return [];
-      }),
-      fetchPinterestImages(query, page).catch(err => {
-        console.warn('Pinterest fetching failed:', err.message);
-        return [];
-      })
-    ]);
-
-    const seenUrls = new Set();
-    const merged = [];
-    const maxLen = Math.max(googleResults.length, pinterestResults.length);
-    for (let i = 0; i < maxLen; i++) {
-      if (i < googleResults.length) {
-        const item = googleResults[i];
-        if (item.image && !seenUrls.has(item.image)) {
-          seenUrls.add(item.image);
-          merged.push(item);
-        }
-      }
-      if (i < pinterestResults.length) {
-        const item = pinterestResults[i];
-        if (item.image && !seenUrls.has(item.image)) {
-          seenUrls.add(item.image);
-          merged.push(item);
-        }
-      }
+    scrapedItems = await fetchDuckDuckGoImages(query, page);
+    if (scrapedItems && scrapedItems.length > 0) {
+      source = 'duckduckgo';
     }
-
-    const sources = [];
-    if (googleResults.length > 0) {
-      sources.push('google');
-      incrementSerperUsage();
-    }
-    if (pinterestResults.length > 0) sources.push('pinterest');
-    
-    if (merged.length > 0) {
-      const cat = category !== 'all' ? category : determineCategoryFromQuery(query);
-      const hatsWithCat = merged.map(h => ({
-        ...h,
-        category: cat,
-        tags: [cat, ...query.split(/\s+/).filter(w => w.length > 2)]
-      }));
-      
-      saveHatsToCache(hatsWithCat, query);
-      
-      // Blend cached/user-added matching hats into page 1 results to make them visible to other users
-      let blendedData = hatsWithCat;
-      if (page === 1 && matchedHats.length > 0) {
-        const seen = new Set(matchedHats.map(h => h.image));
-        const filteredNew = hatsWithCat.filter(h => !seen.has(h.image));
-        blendedData = [...matchedHats, ...filteredNew];
-      }
-      
-      return res.json({ success: true, source: sources.join('+'), data: blendedData });
-    }
-
-    // Fallback if search returns nothing
-    const fallbackResults = matchedHats.length > 0 ? matchedHats : cachedHats.slice(0, 15);
-    const paginatedFallback = fallbackResults.slice(startIndex, startIndex + itemsPerPage);
-    return res.json({ 
-      success: true, 
-      source: 'fallback-cache', 
-      data: paginatedFallback,
-      info: 'No results found. Showing results from cache.' 
-    });
-
-  } catch (error) {
-    console.error('All search options failed:', error.message);
-    const fallbackResults = matchedHats.length > 0 ? matchedHats : cachedHats.slice(0, 15);
-    const paginatedFallback = fallbackResults.slice(startIndex, startIndex + itemsPerPage);
-    return res.json({ 
-      success: true, 
-      source: 'fallback-cache', 
-      data: paginatedFallback,
-      error: error.message 
-    });
+  } catch (err) {
+    console.warn('[Scraper Flow] DuckDuckGo scraper failed, will try Bing fallback:', err.message);
   }
+
+  // 2. Primary fallback: Bing scraper if DuckDuckGo fails or returns no results
+  if (!scrapedItems || scrapedItems.length === 0) {
+    console.log(`[Scraper Flow] DuckDuckGo scraper returned no results. Falling back to Bing scraper for: "${query}", page ${page}`);
+    try {
+      scrapedItems = await fetchBingImages(query, page);
+      if (scrapedItems && scrapedItems.length > 0) {
+        source = 'bing';
+      }
+    } catch (err) {
+      console.warn('[Scraper Flow] Bing scraper failed:', err.message);
+    }
+  }
+
+  // 3. Optional secondary overlay: Google Serper if key is configured
+  if (SERPER_API_KEY) {
+    const canScrapeSerper = checkSerperLimit();
+    if (canScrapeSerper) {
+      console.log(`[Scraper Flow] SERPER_API_KEY is configured. Fetching Google Images page ${page} as secondary overlay...`);
+      try {
+        const googleResults = await fetchGoogleImages(query, page);
+        if (googleResults && googleResults.length > 0) {
+          const seenUrls = new Set(scrapedItems.map(item => item.image));
+          for (const item of googleResults) {
+            if (!seenUrls.has(item.image)) {
+              scrapedItems.push(item);
+              seenUrls.add(item.image);
+            }
+          }
+          source = source ? `${source}+google` : 'google';
+          incrementSerperUsage();
+        }
+      } catch (err) {
+        console.warn('[Scraper Flow] Google Serper fetching failed:', err.message);
+      }
+    } else {
+      console.log('[Scraper Flow] Google Serper usage limit reached, skipping Serper overlay.');
+    }
+  }
+
+  // 4. Optional secondary overlay: Firecrawl if key is configured
+  const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
+  if (FIRECRAWL_API_KEY) {
+    console.log(`[Scraper Flow] FIRECRAWL_API_KEY is configured. Crawling with Firecrawl as secondary overlay...`);
+    try {
+      const firecrawlHats = await scrapePinterestWithFirecrawl(query, FIRECRAWL_API_KEY);
+      if (firecrawlHats && firecrawlHats.length > 0) {
+        const seenUrls = new Set(scrapedItems.map(item => item.image));
+        for (const item of firecrawlHats) {
+          if (!seenUrls.has(item.image)) {
+            scrapedItems.push(item);
+            seenUrls.add(item.image);
+          }
+        }
+        source = source ? `${source}+firecrawl` : 'firecrawl';
+      }
+    } catch (err) {
+      console.warn('[Scraper Flow] Firecrawl overlay failed:', err.message);
+    }
+  }
+
+  // 5. Apply Google Gemini LLM garbage filter if items were successfully scraped
+  let filteredItems = scrapedItems;
+  if (scrapedItems.length > 0) {
+    const userApiKey = getGeminiApiKey(req);
+    try {
+      filteredItems = await filterHatsWithLLM(scrapedItems, userApiKey);
+    } catch (llmErr) {
+      console.error('[Scraper Endpoint] LLM Filtering failed:', llmErr.message);
+      return res.status(500).json({
+        success: false,
+        error: `AI Filtering error: ${llmErr.message}. Vui lòng kiểm tra lại API Key hoặc cấu hình tài khoản Google AI Studio.`
+      });
+    }
+  }
+
+  if (filteredItems.length > 0) {
+    const cat = category !== 'all' ? category : determineCategoryFromQuery(query);
+    const hatsWithCat = filteredItems.map(h => ({
+      ...h,
+      category: cat,
+      tags: [cat, ...query.split(/\s+/).filter(w => w.length > 2)]
+    }));
+    
+    saveHatsToCache(hatsWithCat, query);
+    
+    // Blend cached/user-added matching hats into page 1 results to make them visible to other users
+    let blendedData = hatsWithCat;
+    if (page === 1 && matchedHats.length > 0) {
+      const seen = new Set(matchedHats.map(h => h.image));
+      const filteredNew = hatsWithCat.filter(h => !seen.has(h.image));
+      blendedData = [...matchedHats, ...filteredNew];
+    }
+    
+    return res.json({ success: true, source: source || 'fallback-cache', data: blendedData });
+  }
+
+  // Fallback if search returns nothing or all items are filtered out
+  const fallbackResults = matchedHats.length > 0 ? matchedHats : cachedHats.slice(0, 15);
+  const paginatedFallback = fallbackResults.slice(startIndex, startIndex + itemsPerPage);
+  return res.json({ 
+    success: true, 
+    source: 'fallback-cache', 
+    data: paginatedFallback,
+    info: 'No results found. Showing results from cache.' 
+  });
 });
 
 // POST /api/hats/add — Thêm nón mới (Dán link) và chia sẻ cho toàn bộ user
@@ -767,6 +793,105 @@ function getGeminiApiKey(req, userId = null) {
   
   // 3. From environment variables
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+}
+
+/**
+ * Filter scraped list of hats using Google Gemini API to ensure only valid headwear/streetwear items are kept.
+ * @param {Array} items Scraped hats containing titles and image URLs
+ * @param {string} userApiKey Configured Gemini API key or empty for env fallback
+ * @returns {Promise<Array>} Filtered array of hats
+ */
+async function filterHatsWithLLM(items, userApiKey) {
+  const apiKey = userApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+  if (!apiKey) {
+    console.warn('[LLM Filter] No Gemini API key provided/found. Skipping filtering.');
+    return items;
+  }
+
+  if (!items || items.length === 0) {
+    return [];
+  }
+
+  if (apiKey === 'MOCK_TEST_KEY_12345') {
+    console.log('[LLM Filter] Mock API Key detected. Simulating filtering.');
+    const trashKeywords = [
+      'logo', 'ads', 'promo', 'marketing', 'advertisement', 'sign up', 'log in', 
+      'register', 'install', 'app store', 'google play', 'download', 'vector', 'icon', 
+      'avatar', 'profile', 'clipart', 'badge', 'banner', 'button', 'infographic', 'advert',
+      'gift card', 'coupon', 'discount', 'sale', 'price', 'buy now', 'shop online', 'store',
+      'pinterst', 'follow me on', 'pinterest logo', 'pinterest icon'
+    ];
+    return items.filter(item => {
+      const lowercaseTitle = (item.title || '').toLowerCase();
+      const lowercaseUrl = (item.image || '').toLowerCase();
+      const isTrash = trashKeywords.some(kw => lowercaseTitle.includes(kw) || lowercaseUrl.includes(kw));
+      return !isTrash;
+    });
+  }
+
+  try {
+    const itemsPayload = items.map((item, index) => ({
+      index,
+      title: item.title || '',
+      url: item.image || ''
+    }));
+
+    const promptText = `You are a fashion curator AI. Analyze the following list of items scraped from the web.
+Each item is represented as a JSON object with an index, a title, and an image URL.
+Determine if each item is a valid hat, cap, beanie, or fashion streetwear apparel item.
+Filter out items that are logos, promotional advertisements, banners, badges, app icons, profile icons, vector clipart, or unrelated images.
+
+Return ONLY a JSON array containing the 0-based indices of the valid items that should be kept.
+Do not wrap the output in markdown code blocks like \`\`\`json. Return only the raw JSON array.
+Example output format: [0, 2, 3, 5]
+
+Items:
+${JSON.stringify(itemsPayload, null, 2)}`;
+
+    console.log(`[LLM Filter] Sending ${items.length} items to Gemini for fashion apparel verification...`);
+
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: promptText
+              }
+            ]
+          }
+        ]
+      },
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 15000
+      }
+    );
+
+    const contentText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!contentText) {
+      throw new Error('Empty response from Gemini API');
+    }
+
+    let jsonString = contentText.trim();
+    if (jsonString.startsWith('```')) {
+      jsonString = jsonString.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+    }
+
+    const indices = JSON.parse(jsonString);
+    if (Array.isArray(indices)) {
+      console.log(`[LLM Filter] Gemini kept ${indices.length} of ${items.length} items.`);
+      return items.filter((_, index) => indices.includes(index));
+    } else {
+      console.warn('[LLM Filter] Gemini did not return a valid array of indices:', contentText);
+      return items;
+    }
+  } catch (error) {
+    const errorMsg = error.response?.data?.error?.message || error.message;
+    console.error('[LLM Filter] Gemini API call failed:', errorMsg);
+    throw new Error(`LLM Garbage Filter failed: ${errorMsg}`);
+  }
 }
 
 // AI Analyze Endpoint (Proxy for Gemini API)
