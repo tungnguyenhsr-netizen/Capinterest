@@ -436,22 +436,45 @@ async function runRetraining(apiKey) {
     return;
   }
 
-  const response = await axios.post(
+  let response;
+  const urlsToTry = [
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${actualApiKey}`,
-    {
-      contents: [
+    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${actualApiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${actualApiKey}`,
+    `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${actualApiKey}`
+  ];
+
+  let lastError;
+  for (const url of urlsToTry) {
+    try {
+      console.log(`[Retraining] Trying URL: ${url.split('?')[0]}`);
+      response = await axios.post(
+        url,
         {
-          parts: [
-            { text: promptText }
+          contents: [
+            {
+              parts: [
+                { text: promptText }
+              ]
+            }
           ]
+        },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 30000
         }
-      ]
-    },
-    {
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 30000
+      );
+      break;
+    } catch (err) {
+      lastError = err;
+      const errMsg = err.response ? JSON.stringify(err.response.data) : err.message;
+      console.warn(`[Retraining] URL ${url.split('?')[0]} failed: ${errMsg}`);
     }
-  );
+  }
+
+  if (!response) {
+    throw lastError;
+  }
 
   const contentText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!contentText) {
