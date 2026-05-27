@@ -113,12 +113,17 @@ const BLOCKED_URL_PATTERNS = [
  * Quick pre-filter: remove items from blacklisted domains, garbage title keywords,
  * and suspicious URL patterns. This runs BEFORE the LLM to cut costs and improve accuracy.
  */
-export function preFilterItems(items) {
+export function preFilterItems(items, reportedUrls = new Set()) {
   const before = items.length;
   const filtered = items.filter(item => {
     const imageUrl = (item.image || item.url || '').toLowerCase();
     const sourceUrl = (item.url || '').toLowerCase();
     const title = (item.title || '').toLowerCase();
+
+    // Block reported URLs
+    if (reportedUrls.has(imageUrl) || reportedUrls.has(sourceUrl)) {
+      return false;
+    }
 
     // 1. Block by domain
     const isBlockedDomain = BLOCKED_DOMAINS.some(domain =>

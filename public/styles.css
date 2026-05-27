@@ -480,6 +480,7 @@ body {
 .overlay-top {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
 }
 
 .like-btn {
@@ -505,6 +506,34 @@ body {
 
 .like-btn.liked {
   background: #ff0055;
+}
+
+.report-card-btn {
+  background: rgba(255, 0, 85, 0.1);
+  border: 1px solid #ff0055;
+  color: #ff0055;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: var(--transition-smooth);
+}
+
+.report-card-btn:hover {
+  background: #ff0055;
+  color: var(--text-primary);
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+}
+
+.card-fade-out {
+  opacity: 0 !important;
+  transform: scale(0.9) !important;
+  transition: opacity 0.5s ease, transform 0.5s ease !important;
 }
 
 .overlay-bottom {
@@ -1198,6 +1227,32 @@ body {
 
 .text-center {
   text-align: center;
+}
+
+.btn-danger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border-radius: 30px;
+  border: 1px solid #ff0055;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-main);
+  background: rgba(255, 0, 85, 0.1);
+  color: #ff0055;
+  box-shadow: 0 4px 15px rgba(255, 0, 85, 0.2);
+  transition: var(--transition-smooth);
+  width: 100%;
+}
+
+.btn-danger:hover {
+  background: #ff0055;
+  color: var(--text-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 0, 85, 0.5);
 }
 
 /* Settings Modal styling */
@@ -2892,6 +2947,21 @@ body {
     min-height: auto;
     gap: 20px;
     padding: 16px;
+  }
+}
+
+.card-entrance {
+  animation: cardEntrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

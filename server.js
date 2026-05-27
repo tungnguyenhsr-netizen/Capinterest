@@ -135,7 +135,7 @@ async function fetchPinterestImages(query, page = 1) {
                 'register', 'install', 'app store', 'google play', 'download', 'vector', 'icon', 
                 'avatar', 'profile', 'clipart', 'badge', 'banner', 'button', 'infographic', 'advert',
                 'gift card', 'coupon', 'discount', 'sale', 'price', 'buy now', 'shop online', 'store',
-                'pinterst', 'follow me on', 'pinterest logo', 'pinterest icon'
+                'pinterest', 'follow me on', 'pinterest logo', 'pinterest icon'
               ];
               const lowercaseTitle = title.toLowerCase();
               const lowercaseUrl = imageUrl.toLowerCase();
@@ -330,12 +330,29 @@ async function uploadImageToDriveOrLocal(imageInput, filenamePrefix = 'hat') {
 // ─── Cache & Search Limit Helpers ───────────────────────────────────────────
 const SCRAPED_HATS_FILE = path.join(DATA_DIR, 'scraped_hats.json');
 const SERPER_USAGE_FILE = path.join(DATA_DIR, 'serper_usage.json');
+const REPORTED_IMAGES_FILE = path.join(DATA_DIR, 'reported_images.json');
 const MAX_SERPER_CALLS_PER_DAY = 30;
 
 function getCachedHats() {
   if (!fs.existsSync(SCRAPED_HATS_FILE)) return [];
   try {
     return JSON.parse(fs.readFileSync(SCRAPED_HATS_FILE, 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
+function getReportedImages() {
+  if (!fs.existsSync(REPORTED_IMAGES_FILE)) {
+    try {
+      fs.writeFileSync(REPORTED_IMAGES_FILE, JSON.stringify([], null, 2));
+    } catch (err) {
+      console.error('[Report] Failed to create reported_images.json:', err.message);
+    }
+    return [];
+  }
+  try {
+    return JSON.parse(fs.readFileSync(REPORTED_IMAGES_FILE, 'utf8'));
   } catch {
     return [];
   }
@@ -411,6 +428,15 @@ function determineCategoryFromQuery(query) {
   return 'trendy';
 }
 
+function shuffleArray(array) {
+  const arr = array.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 // Search Endpoint - Google Custom Search + Pinterest merged with Caching and Credit Limiter
 app.get('/api/scrape', async (req, res) => {
   const query = (req.query.query || 'trendy caps').toLowerCase().trim();
@@ -426,6 +452,9 @@ app.get('/api/scrape', async (req, res) => {
   if (isDefaultFeed) {
     // Show all cached hats, sorting user added or newest first
     matchedHats = cachedHats.slice().reverse();
+    if (page === 1) {
+      matchedHats = shuffleArray(matchedHats);
+    }
   } else {
     // Search cached hats by keyword match
     const queryWords = query.split(/\s+/).filter(w => w.length > 1);
@@ -444,12 +473,12 @@ app.get('/api/scrape', async (req, res) => {
     });
   }
 
-  const itemsPerPage = 12;
+  const itemsPerPage = 24;
   const startIndex = (page - 1) * itemsPerPage;
   const paginatedCache = matchedHats.slice(startIndex, startIndex + itemsPerPage);
   
-  // If we have enough cached data, serve from cache
-  if (paginatedCache.length >= 8) {
+  // If we have enough cached data and it is a default feed, serve from cache
+  if (isDefaultFeed && paginatedCache.length >= 8) {
     console.log(`[Cache Hit] Serving ${paginatedCache.length} cached results for query "${query}" (page ${page})`);
     return res.json({ success: true, source: 'cache', data: paginatedCache });
   }
@@ -457,10 +486,13 @@ app.get('/api/scrape', async (req, res) => {
   let scrapedItems = [];
   let source = '';
 
+  // Query Refinement: if query is not default feed, append keywords to improve relevance
+  const refinedQuery = isDefaultFeed ? query : `${query} cap hat fashion`;
+
   // 1. Primary engine: DuckDuckGo scraper first
-  console.log(`[Scraper Flow] Trying DuckDuckGo scraper for: "${query}", page ${page}`);
+  console.log(`[Scraper Flow] Trying DuckDuckGo scraper for refined query: "${refinedQuery}", page ${page}`);
   try {
-    scrapedItems = await fetchDuckDuckGoImages(query, page);
+    scrapedItems = await fetchDuckDuckGoImages(refinedQuery, page);
     if (scrapedItems && scrapedItems.length > 0) {
       source = 'duckduckgo';
     }
@@ -470,9 +502,9 @@ app.get('/api/scrape', async (req, res) => {
 
   // 2. Primary fallback: Bing scraper if DuckDuckGo fails or returns no results
   if (!scrapedItems || scrapedItems.length === 0) {
-    console.log(`[Scraper Flow] DuckDuckGo scraper returned no results. Falling back to Bing scraper for: "${query}", page ${page}`);
+    console.log(`[Scraper Flow] DuckDuckGo scraper returned no results. Falling back to Bing scraper for refined query: "${refinedQuery}", page ${page}`);
     try {
-      scrapedItems = await fetchBingImages(query, page);
+      scrapedItems = await fetchBingImages(refinedQuery, page);
       if (scrapedItems && scrapedItems.length > 0) {
         source = 'bing';
       }
@@ -487,7 +519,7 @@ app.get('/api/scrape', async (req, res) => {
     if (canScrapeSerper) {
       console.log(`[Scraper Flow] SERPER_API_KEY is configured. Fetching Google Images page ${page} as secondary overlay...`);
       try {
-        const googleResults = await fetchGoogleImages(query, page);
+        const googleResults = await fetchGoogleImages(refinedQuery, page);
         if (googleResults && googleResults.length > 0) {
           const seenUrls = new Set(scrapedItems.map(item => item.image));
           for (const item of googleResults) {
@@ -512,7 +544,7 @@ app.get('/api/scrape', async (req, res) => {
   if (FIRECRAWL_API_KEY) {
     console.log(`[Scraper Flow] FIRECRAWL_API_KEY is configured. Crawling with Firecrawl as secondary overlay...`);
     try {
-      const firecrawlHats = await scrapePinterestWithFirecrawl(query, FIRECRAWL_API_KEY);
+      const firecrawlHats = await scrapePinterestWithFirecrawl(refinedQuery, FIRECRAWL_API_KEY);
       if (firecrawlHats && firecrawlHats.length > 0) {
         const seenUrls = new Set(scrapedItems.map(item => item.image));
         for (const item of firecrawlHats) {
@@ -529,22 +561,32 @@ app.get('/api/scrape', async (req, res) => {
   }
 
   // 5a. Pre-filter: block blacklisted domains & garbage title keywords (fast, no LLM cost)
+  const reportedImages = getReportedImages();
+  const reportedUrlsSet = new Set(reportedImages.map(item => (item.image || '').toLowerCase()));
+
   const beforePreFilter = scrapedItems.length;
-  scrapedItems = preFilterItems(scrapedItems);
-  console.log(`[Pre-Filter] Removed ${beforePreFilter - scrapedItems.length} items via domain/keyword blacklist. Remaining: ${scrapedItems.length}`);
+  scrapedItems = preFilterItems(scrapedItems, reportedUrlsSet);
+  console.log(`[Pre-Filter] Removed ${beforePreFilter - scrapedItems.length} items via domain/keyword/reported blacklist. Remaining: ${scrapedItems.length}`);
 
   // 5b. Apply Google Gemini LLM garbage filter if items were successfully scraped
   let filteredItems = scrapedItems;
+  let llmFilterSuccess = false;
+  
   if (scrapedItems.length > 0) {
     const userApiKey = getGeminiApiKey(req);
     try {
-      filteredItems = await filterHatsWithLLM(scrapedItems, userApiKey);
+      const llmResult = await filterHatsWithLLM(scrapedItems, userApiKey);
+      if (llmResult && llmResult.success) {
+        filteredItems = llmResult.items;
+        llmFilterSuccess = true;
+      } else {
+        filteredItems = llmResult.items;
+        llmFilterSuccess = false;
+      }
     } catch (llmErr) {
-      console.error('[Scraper Endpoint] LLM Filtering failed:', llmErr.message);
-      return res.status(500).json({
-        success: false,
-        error: `AI Filtering error: ${llmErr.message}. Vui lòng kiểm tra lại API Key hoặc cấu hình tài khoản Google AI Studio.`
-      });
+      console.error('[Scraper Endpoint] LLM Filtering failed, returning unfiltered as temporary response:', llmErr.message);
+      filteredItems = scrapedItems; // unfiltered
+      llmFilterSuccess = false;
     }
   }
 
@@ -556,7 +598,11 @@ app.get('/api/scrape', async (req, res) => {
       tags: [cat, ...query.split(/\s+/).filter(w => w.length > 2)]
     }));
     
-    saveHatsToCache(hatsWithCat, query);
+    if (llmFilterSuccess) {
+      saveHatsToCache(hatsWithCat, query);
+    } else {
+      console.log(`[Scraper Endpoint] Skipping cache save for ${filteredItems.length} unfiltered/partially filtered items.`);
+    }
     
     // Blend cached/user-added matching hats into page 1 results to make them visible to other users
     let blendedData = hatsWithCat;
@@ -566,7 +612,12 @@ app.get('/api/scrape', async (req, res) => {
       blendedData = [...matchedHats, ...filteredNew];
     }
     
-    return res.json({ success: true, source: source || 'fallback-cache', data: blendedData });
+    return res.json({ 
+      success: true, 
+      source: source || 'fallback-cache', 
+      data: blendedData,
+      isUnfilteredTemporary: !llmFilterSuccess 
+    });
   }
 
   // Fallback if search returns nothing or all items are filtered out
@@ -612,6 +663,36 @@ app.post('/api/hats/add', async (req, res) => {
   } catch (err) {
     console.error('[Hats API] Error adding custom hat:', err.message);
     res.status(500).json({ success: false, error: err.message || 'Không thể lưu nón chia sẻ' });
+  }
+});
+
+// POST /api/hats/report — Báo cáo hình ảnh không hợp lệ/rác
+app.post('/api/hats/report', (req, res) => {
+  const { image, title, query } = req.body || {};
+  if (!image) {
+    return res.status(400).json({ success: false, error: 'Thiếu liên kết hình ảnh báo cáo' });
+  }
+
+  try {
+    const reports = getReportedImages();
+    reports.push({
+      image,
+      title: title || '',
+      query: query || '',
+      timestamp: new Date().toISOString()
+    });
+    fs.writeFileSync(REPORTED_IMAGES_FILE, JSON.stringify(reports, null, 2));
+
+    // Remove matching image URLs from cache
+    const cached = getCachedHats();
+    const updatedCache = cached.filter(item => (item.image || '').toLowerCase() !== image.toLowerCase());
+    fs.writeFileSync(SCRAPED_HATS_FILE, JSON.stringify(updatedCache, null, 2));
+
+    console.log(`[Report API] Image reported and removed from cache: ${image}`);
+    return res.json({ success: true, message: 'Image reported and removed from cache.' });
+  } catch (err) {
+    console.error('[Report API] Error reporting image:', err.message);
+    return res.status(500).json({ success: false, error: err.message || 'Không thể báo cáo hình ảnh' });
   }
 });
 
@@ -804,17 +885,17 @@ function getGeminiApiKey(req, userId = null) {
  * Filter scraped list of hats using Google Gemini API to ensure only valid headwear/streetwear items are kept.
  * @param {Array} items Scraped hats containing titles and image URLs
  * @param {string} userApiKey Configured Gemini API key or empty for env fallback
- * @returns {Promise<Array>} Filtered array of hats
+ * @returns {Promise<Object>} Filtered array of hats and success state
  */
 async function filterHatsWithLLM(items, userApiKey) {
   const apiKey = userApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
   if (!apiKey) {
     console.warn('[LLM Filter] No Gemini API key provided/found. Skipping filtering.');
-    return items;
+    return { success: false, reason: 'no_api_key', items };
   }
 
   if (!items || items.length === 0) {
-    return [];
+    return { success: true, items: [] };
   }
 
   if (apiKey === 'MOCK_TEST_KEY_12345') {
@@ -824,60 +905,89 @@ async function filterHatsWithLLM(items, userApiKey) {
       'register', 'install', 'app store', 'google play', 'download', 'vector', 'icon', 
       'avatar', 'profile', 'clipart', 'badge', 'banner', 'button', 'infographic', 'advert',
       'gift card', 'coupon', 'discount', 'sale', 'price', 'buy now', 'shop online', 'store',
-      'pinterst', 'follow me on', 'pinterest logo', 'pinterest icon'
+      'pinterest', 'follow me on', 'pinterest logo', 'pinterest icon'
     ];
-    return items.filter(item => {
+    const filtered = items.slice(0, 12).filter(item => {
       const lowercaseTitle = (item.title || '').toLowerCase();
       const lowercaseUrl = (item.image || '').toLowerCase();
       const isTrash = trashKeywords.some(kw => lowercaseTitle.includes(kw) || lowercaseUrl.includes(kw));
       return !isTrash;
     });
+    return { success: true, items: filtered };
   }
 
   try {
-    const itemsPayload = items.map((item, index) => ({
-      index,
-      title: item.title || '',
-      url: item.image || ''
-    }));
+    const topItems = items.slice(0, 12);
+    console.log(`[LLM Filter] Attempting to download top ${topItems.length} images for Gemini 1.5 Flash Vision...`);
+    
+    const downloadPromises = topItems.map(async (item, i) => {
+      if (!item.image) return null;
+      try {
+        const response = await axios.get(item.image, {
+          responseType: 'arraybuffer',
+          timeout: 2000
+        });
+        const contentType = response.headers['content-type'] || 'image/jpeg';
+        if (contentType.startsWith('image/')) {
+          const base64 = Buffer.from(response.data).toString('base64');
+          return {
+            index: i,
+            mimeType: contentType,
+            base64
+          };
+        }
+      } catch (err) {
+        console.warn(`[LLM Filter] Failed to download image for item at index ${i} (${item.image}):`, err.message);
+      }
+      return null;
+    });
 
-    const promptText = `You are a STRICT fashion image curator AI for a hat/cap discovery platform.
-Analyze the following list of items scraped from the web. Each item has an index, a title, and an image URL.
+    const downloadedResults = await Promise.all(downloadPromises);
+    const downloadedImages = downloadedResults.filter(Boolean);
 
-KEEP an item ONLY if it clearly shows a REAL, WEARABLE hat, cap, beanie, bucket hat, snapback, beret, fedora, or similar headwear — either worn by a real person in a photo or displayed as a real product for sale.
+    if (downloadedImages.length === 0) {
+      console.warn('[LLM Filter] No images could be downloaded successfully.');
+      return { success: true, items: [] };
+    }
 
-REJECT an item if it matches ANY of these categories:
-- Anime, manga, cartoon, or illustrated/drawn characters (even if wearing hats)
-- Fan art, digital art, paintings, or artwork from Pixiv, DeviantArt, ArtStation, etc.
-- Logos, icons, badges, banners, or promotional/advertising graphics
-- Vector clipart, SVG illustrations, transparent PNGs, or icon packs
+    const textPrompt = `You are a STRICT fashion image curator AI for a hat/cap discovery platform.
+We have provided several images from the web, each labeled with "Image index <number>".
+
+For each image, determine if it represents a REAL, WEARABLE hat, cap, beanie, bucket hat, snapback, beret, fedora, or similar headwear.
+This could be a photo of a real person wearing a hat, or a photo of a real hat product for sale.
+
+You must AGGRESSIVELY REJECT any image if it shows:
+- Anime, manga, cartoon, drawings, or illustrated/painted characters (even if wearing hats)
+- Fan art, digital art, paintings, sketches, or illustrations
+- Logos, icons, badges, emblems, banners, graphics, or user interface screens
+- Vector clipart, transparent PNGs of graphics, or app/website screenshots
 - Social media profile pictures, avatars, or wallpapers
-- Infographics, tutorials, memes, or how-to diagrams
-- Products that are NOT headwear (shoes, bags, shirts, jewelry, etc.)
-- Low-quality, blurry, or irrelevant stock photos where a hat is not the main subject
-- Pinterest UI screenshots, app store listings, or website screenshots
+- Products that are NOT headwear (such as shoes, bags, shirts, pants, jackets, jewelry, etc.)
+- Highly irrelevant photos where no headwear/hat is present
 
-Be aggressive in filtering. When in doubt, REJECT the item.
+Return ONLY a JSON array of the indices (numbers) of the images that represent valid, real, wearable hats/caps to KEEP.
+Do NOT wrap your response in markdown code blocks. Return the raw JSON array only.
+Example response: [0, 2, 5]`;
 
-Return ONLY a JSON array of the 0-based indices of items to KEEP.
-Do NOT wrap in markdown code blocks. Return raw JSON array only.
-Example: [0, 2, 5]
+    const parts = [{ text: textPrompt }];
+    for (const img of downloadedImages) {
+      parts.push({ text: `Image index ${img.index}:` });
+      parts.push({
+        inlineData: {
+          mimeType: img.mimeType,
+          data: img.base64
+        }
+      });
+    }
 
-Items:
-${JSON.stringify(itemsPayload, null, 2)}`;
-
-    console.log(`[LLM Filter] Sending ${items.length} items to Gemini for fashion apparel verification...`);
+    console.log(`[LLM Filter] Sending ${downloadedImages.length} images to Gemini 1.5 Flash Vision...`);
 
     const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         contents: [
           {
-            parts: [
-              {
-                text: promptText
-              }
-            ]
+            parts: parts
           }
         ]
       },
@@ -899,11 +1009,12 @@ ${JSON.stringify(itemsPayload, null, 2)}`;
 
     const indices = JSON.parse(jsonString);
     if (Array.isArray(indices)) {
-      console.log(`[LLM Filter] Gemini kept ${indices.length} of ${items.length} items.`);
-      return items.filter((_, index) => indices.includes(index));
+      console.log(`[LLM Filter] Gemini Vision kept indices:`, indices);
+      const filtered = topItems.filter((_, index) => indices.includes(index));
+      return { success: true, items: filtered };
     } else {
-      console.warn('[LLM Filter] Gemini did not return a valid array of indices:', contentText);
-      return items;
+      console.warn('[LLM Filter] Gemini Vision did not return a valid array of indices:', contentText);
+      return { success: false, items: topItems };
     }
   } catch (error) {
     const errorMsg = error.response?.data?.error?.message || error.message;

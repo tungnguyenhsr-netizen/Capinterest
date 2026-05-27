@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const state = {
     currentTab: 'feed',
     currentFeedItems: [],
+    activeModalItem: null,
     searchQuery: '',
     selectedCategory: 'all',
     auth: {
@@ -23,6 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     currentPage: 1,
     isLoadingNextPage: false,
     hasMore: true,
+    prefetchBuffer: [],
+    prefetchPage: 2,
+    isPrefetching: false,
     selectedReferenceId: null,
     lang: localStorage.getItem('capinterest_lang') || 'vi',
     defaultHats: [
@@ -132,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modalAnalyzeBtn: document.getElementById('modal-analyze-btn'),
     modalBrainstormBtn: document.getElementById('modal-brainstorm-btn'),
     modalSourceBtn: document.getElementById('modal-source-btn'),
+    modalReportBtn: document.getElementById('modal-report-btn'),
     
     // Settings Modal
     settingsBtn: document.getElementById('settings-btn'),
@@ -156,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addCategorySelect: document.getElementById('add-category-select'),
     saveAddBtn: document.getElementById('save-add-btn'),
     infiniteLoading: document.getElementById('infinite-loading'),
+    infiniteScrollTrigger: document.getElementById('infinite-scroll-trigger'),
 
     // Collection
     collectionNavBtn: document.getElementById('collection-nav-btn'),
@@ -433,6 +439,9 @@ document.addEventListener('DOMContentLoaded', () => {
       color_copied: "Đã sao chép!",
       click_to_copy_color: "Click để sao chép mã màu",
       notif_scrape_failed: "Cào ảnh thất bại",
+      btn_report_trash: "Báo cáo ảnh rác",
+      notif_report_success: "Đã báo cáo ảnh không liên quan. Cảm ơn sự đóng góp của bạn!",
+      notif_report_failed: "Gửi báo cáo thất bại. Vui lòng thử lại sau.",
       
       // AI Analyzer bilingual support keys
       analyzer_scanning: "AI Đang Phân Tích Thiết Kế...",
@@ -455,6 +464,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // Changelog Localization (Vietnamese)
       changelog_title: "Nhật Ký Cập Nhật (Changelog)",
       changelog_subtitle: "Lịch sử phát triển và nâng cấp hệ thống CapInterest phong cách Cyberpunk",
+      changelog_date_v180: "27 Tháng 5, 2026",
+      changelog_title_v180: "🚀 Gemini Vision + Bộ Đệm Prefetch Vô Hạn + Báo Cáo Rác Tự Làm Sạch Cache",
+      changelog_li1_v180: "<span class=\"highlight-purple\">Gemini Vision Curatorial Filter:</span> Xác thực hình ảnh đa phương thức phía máy chủ sử dụng gemini-1.5-flash kết hợp tải xuống song song để lọc ảnh rác thông minh.",
+      changelog_li2_v180: "<span class=\"highlight-cyan\">Infinite Prefetch Buffer:</span> Cơ chế cuộn vô hạn mượt mà không có độ trễ giống Pinterest nhờ kỹ thuật tải trước (prefetch) hình ảnh dưới nền.",
+      changelog_li3_v180: "<span class=\"highlight-cyan\">Crowd-sourced Flagging (Report Trash):</span> Thêm nút báo cáo ảnh rác/không liên quan trên giao diện, tự động xóa lập tức khỏi bộ nhớ cache và đưa vào danh sách đen động.",
       changelog_date_v170: "26 Tháng 5, 2026",
       changelog_title_v170: "🧩 Cybernetic Mood Board + Scraper Miễn Phí + Bộ Lọc Ảnh AI",
       changelog_li1_v170: "<span class=\"highlight-purple\">Cybernetic Mood Board:</span> Bảng ý tưởng sáng tạo phong cách mạch điện tử — kéo thả nón cảm hứng lên canvas vô hạn, vẽ đường liên kết neon giữa các node, nhấp đúp ghi chú kỹ thuật số, zoom/pan mượt mà và tích hợp AI phân tích cụm thiết kế.",
@@ -704,6 +718,9 @@ document.addEventListener('DOMContentLoaded', () => {
       color_copied: "Copied!",
       click_to_copy_color: "Click to copy color code",
       notif_scrape_failed: "Scraping failed",
+      btn_report_trash: "Report Trash",
+      notif_report_success: "Image reported. Thank you for your feedback!",
+      notif_report_failed: "Failed to send report. Please try again later.",
       
       // AI Analyzer bilingual support keys
       analyzer_scanning: "AI is Analyzing Design...",
@@ -726,6 +743,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // Changelog Localization (English)
       changelog_title: "Update History (Changelog)",
       changelog_subtitle: "Development history and system upgrades of CapInterest in Cyberpunk style",
+      changelog_date_v180: "May 27, 2026",
+      changelog_title_v180: "🚀 Gemini Vision + Infinite Prefetch Buffer + Crowd-sourced Flagging (v1.8.0)",
+      changelog_li1_v180: "<span class=\"highlight-purple\">Gemini Vision Curatorial Filter:</span> Server-side multimodal image verification using gemini-1.5-flash with parallel downloads for smart filtering.",
+      changelog_li2_v180: "<span class=\"highlight-cyan\">Infinite Prefetch Buffer:</span> Zero-latency continuous scrolling similar to Pinterest utilizing background prefetching mechanism.",
+      changelog_li3_v180: "<span class=\"highlight-cyan\">Crowd-sourced Flagging (Report Trash):</span> UI button to report irrelevant images, instantly evicting them from cache and dynamic blacklisting them.",
       changelog_date_v170: "May 26, 2026",
       changelog_title_v170: "🧩 Cybernetic Mood Board + Free Scrapers + AI Image Filter",
       changelog_li1_v170: "<span class=\"highlight-purple\">Cybernetic Mood Board:</span> Circuit-style creative board — drag and drop inspiration hats onto an infinite canvas, draw neon link paths between nodes, double-click to add digital notes, smooth zoom/pan and AI-powered cluster analysis.",
@@ -1605,6 +1627,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 1. Navigation & Tabs
   function switchTab(tabName) {
+    state.prefetchBuffer = [];
+    state.prefetchPage = 2;
     const prevTab = state.currentTab;
     state.currentTab = tabName;
     
@@ -1734,8 +1758,83 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 3. Web Scraping & Feed Rendering
+  async function prefetchNextPage(query, page) {
+    if (state.isPrefetching || state.currentTab !== 'feed' || !state.hasMore) {
+      return;
+    }
+    state.isPrefetching = true;
+    try {
+      console.log(`[Prefetch] Fetching page ${page} for query "${query}" in background...`);
+      const response = await fetch(`/api/scrape?query=${encodeURIComponent(query)}&page=${page}&_t=${Date.now()}`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result && result.success && result.data) {
+          state.prefetchBuffer = result.data;
+          state.prefetchPage = page;
+          if (typeof scrapeCache !== 'undefined' && scrapeCache.set) {
+            scrapeCache.set(query, page, result);
+          }
+          console.log(`[Prefetch] Successfully prefetched page ${page} with ${result.data.length} items`);
+        }
+      }
+    } catch (error) {
+      console.error('[Prefetch Error]', error);
+    } finally {
+      state.isPrefetching = false;
+    }
+  }
+
   async function fetchScrapedHats(query, page = 1, append = false) {
+    let isAutoRetrying = false;
     if (append) {
+      if (state.prefetchBuffer && state.prefetchBuffer.length > 0 && state.prefetchPage === page) {
+        console.log(`[Buffer Hit] Using prefetch buffer for page ${page}`);
+        
+        // Map and filter out duplicates using state.loadedImageUrls
+        const newItems = [];
+        state.prefetchBuffer.forEach(item => {
+          if (!item.image || state.loadedImageUrls.has(item.image)) return;
+          state.loadedImageUrls.add(item.image);
+          
+          let itemCat = 'trendy';
+          const textToTest = `${item.title} ${query}`.toLowerCase();
+          if (textToTest.includes('snapback')) itemCat = 'snapback';
+          else if (textToTest.includes('beanie')) itemCat = 'beanie';
+          else if (textToTest.includes('bucket')) itemCat = 'bucket';
+          else if (textToTest.includes('techwear') || textToTest.includes('visor')) itemCat = 'techwear';
+          else if (textToTest.includes('dad') || textToTest.includes('vintage') || textToTest.includes('corduroy')) itemCat = 'dadhat';
+          else if (textToTest.includes('creative') || textToTest.includes('crazy') || textToTest.includes('weird')) itemCat = 'creative';
+          
+          newItems.push({
+            ...item,
+            category: itemCat,
+            id: item.id || `scr-${Math.random().toString(36).substr(2, 9)}`
+          });
+        });
+
+        state.scrapedData = [...state.scrapedData, ...newItems];
+        if (newItems.length > 0) {
+          state.currentFeedItems = [...(state.currentFeedItems || []), ...newItems];
+          renderGrid(newItems, true);
+        }
+        
+        // Reset the buffer
+        state.prefetchBuffer = [];
+        
+        // Immediately kick off the background prefetch for the next page
+        prefetchNextPage(query, page + 1);
+        
+        // Clean up loading indicator if applicable
+        state.isLoadingNextPage = false;
+        if (DOM.infiniteLoading) DOM.infiniteLoading.style.display = 'none';
+
+        // Auto-trigger load if viewport is not full and we have more items
+        if (state.currentTab === 'feed') {
+          setTimeout(checkScrollHeight, 300);
+        }
+        return;
+      }
+
       state.isLoadingNextPage = true;
       if (DOM.infiniteLoading) DOM.infiniteLoading.style.display = 'flex';
     } else {
@@ -1746,6 +1845,10 @@ document.addEventListener('DOMContentLoaded', () => {
       state.currentPage = 1;
       state.hasMore = true;
       
+      // Clear buffer and reset prefetchPage
+      state.prefetchBuffer = [];
+      state.prefetchPage = 2;
+
       // Reset seen image URLs, keeping defaults and manual hats
       state.loadedImageUrls.clear();
       state.defaultHats.forEach(h => state.loadedImageUrls.add(h.image));
@@ -1800,6 +1903,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Page ${page}: all ${rawCount} results were duplicates, auto-loading next page...`);
         state.currentPage++;
         if (state.currentPage <= 50) { // safety limit
+          isAutoRetrying = true;
           setTimeout(() => fetchScrapedHats(query, state.currentPage, append), 200);
           return;
         } else {
@@ -1813,6 +1917,7 @@ document.addEventListener('DOMContentLoaded', () => {
           state.currentFeedItems = [...(state.currentFeedItems || []), ...newItems];
           renderGrid(newItems, true);
         }
+        prefetchNextPage(query, page + 1);
       } else {
         state.scrapedData = newItems;
         
@@ -1840,6 +1945,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           renderGrid(displayData, false);
         }
+        prefetchNextPage(query, 2);
       }
 
     } catch (error) {
@@ -1857,11 +1963,13 @@ document.addEventListener('DOMContentLoaded', () => {
         showNotification(getTranslation('notif_default_collection_shown'));
       }
     } finally {
-      if (append) {
-        state.isLoadingNextPage = false;
-        if (DOM.infiniteLoading) DOM.infiniteLoading.style.display = 'none';
-      } else {
-        DOM.scrapeStatus.style.display = 'none';
+      if (!isAutoRetrying) {
+        if (append) {
+          state.isLoadingNextPage = false;
+          if (DOM.infiniteLoading) DOM.infiniteLoading.style.display = 'none';
+        } else {
+          DOM.scrapeStatus.style.display = 'none';
+        }
       }
       
       // Auto-trigger load if viewport is not full and we have more items
@@ -1882,11 +1990,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const isLiked = state.likedItems.includes(item.id || item.image);
       
       const card = document.createElement('div');
-      card.className = 'cap-card';
+      card.className = 'cap-card card-entrance';
+      card.setAttribute('data-id', item.id || item.image);
       card.innerHTML = `
         <img src="${item.image}" alt="${item.title}" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=500&auto=format&fit=crop&q=60'; this.classList.add('img-fallback');">
         <div class="cap-card-overlay">
           <div class="overlay-top">
+            <button class="report-card-btn" data-i18n-title="btn_report_trash" title="${getTranslation('btn_report_trash')}">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2L1 21h22L12 2zm1 14h-2v-2h2v2zm0-4h-2V8h2v4z"/></svg>
+            </button>
             <button class="like-btn ${isLiked ? 'liked' : ''}" data-id="${item.id || item.image}">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             </button>
@@ -1906,7 +2018,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Event listener for opening detail modal on card click (except when clicking buttons)
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.like-btn') || e.target.closest('.card-btn')) return;
+        if (e.target.closest('.like-btn') || e.target.closest('.card-btn') || e.target.closest('.report-card-btn')) return;
         openDetailModal(item);
       });
 
@@ -1915,6 +2027,13 @@ document.addEventListener('DOMContentLoaded', () => {
       likeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleLike(item, likeBtn);
+      });
+
+      // Report Button Event
+      const reportBtn = card.querySelector('.report-card-btn');
+      reportBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        reportImage(item, card);
       });
 
       // Analyze Button Event
@@ -2146,6 +2265,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 4. Detail Modal Handling
   function openDetailModal(item) {
+    state.activeModalItem = item;
     DOM.modalImg.src = item.image;
     DOM.modalTitle.textContent = item.title;
     DOM.modalCreator.textContent = `@${item.creator || 'fashion_source'}`;
@@ -2203,6 +2323,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     DOM.detailModal.classList.add('active');
+  }
+
+  function closeDetailModal() {
+    DOM.detailModal.classList.remove('active');
+    state.activeModalItem = null;
+  }
+
+  async function reportImage(item, cardElement) {
+    try {
+      await apiCall('/api/hats/report', 'POST', {
+        image: item.image,
+        title: item.title,
+        query: item.query || state.searchQuery
+      });
+      showNotification(getTranslation('notif_report_success'));
+      if (cardElement) {
+        cardElement.classList.add('card-fade-out');
+        setTimeout(() => {
+          cardElement.remove();
+        }, 500);
+      }
+      if (state.activeModalItem && (state.activeModalItem.id === item.id || state.activeModalItem.image === item.image)) {
+        closeDetailModal();
+      }
+    } catch (error) {
+      console.error('Report failed:', error);
+      showNotification(getTranslation('notif_report_failed'));
+    }
   }
 
   // Helper to convert Image URL to Base64
@@ -2286,19 +2434,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Setup Event Listeners
   function registerEventListeners() {
-    // Infinite Scroll scroll handler
-    window.addEventListener('scroll', () => {
-      if (state.currentTab !== 'feed' || state.isLoadingNextPage || !state.hasMore) return;
-
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      const scrollHeight = document.documentElement.scrollHeight;
-      const clientHeight = window.innerHeight;
-      const threshold = 800; // Load when user is within 800px of the bottom (larger threshold for continuous feel)
-
-      if (scrollTop + clientHeight >= scrollHeight - threshold) {
-        loadNextPage();
-      }
-    });
+    // Infinite Scroll IntersectionObserver
+    if (DOM.infiniteScrollTrigger) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && state.currentTab === 'feed' && !state.isLoadingNextPage && state.hasMore) {
+            loadNextPage();
+          }
+        });
+      }, {
+        rootMargin: '100px'
+      });
+      observer.observe(DOM.infiniteScrollTrigger);
+    }
 
     // Navigation Tabs
     DOM.feedNavBtn.addEventListener('click', () => {
@@ -2869,8 +3017,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Detail Modal Close
     DOM.closeDetailModal.addEventListener('click', () => {
-      DOM.detailModal.classList.remove('active');
+      closeDetailModal();
     });
+
+    // Detail Modal Report Button
+    if (DOM.modalReportBtn) {
+      DOM.modalReportBtn.addEventListener('click', () => {
+        const activeItem = state.activeModalItem;
+        if (activeItem) {
+          const targetId = activeItem.id || activeItem.image;
+          const cardElement = document.querySelector(`.cap-card[data-id="${targetId}"]`);
+          reportImage(activeItem, cardElement);
+        }
+      });
+    }
 
     // Add Link Modal toggles
     if (DOM.addLinkBtn) {
@@ -3008,7 +3168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Close modals on clicking overlay background
     window.addEventListener('click', (e) => {
-      if (e.target === DOM.detailModal) DOM.detailModal.classList.remove('active');
+      if (e.target === DOM.detailModal) closeDetailModal();
       if (e.target === DOM.settingsModal) DOM.settingsModal.classList.remove('active');
       if (e.target === DOM.addLinkModal) DOM.addLinkModal.classList.remove('active');
       if (e.target === DOM.authModal) DOM.authModal.classList.remove('active');
