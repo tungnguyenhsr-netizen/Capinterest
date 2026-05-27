@@ -49,6 +49,11 @@ const BLOCKED_DOMAINS = [
   // App stores / software
   'play.google.com', 'apps.apple.com', 'microsoft.com',
   'softonic.com', 'cnet.com',
+  // Adult / NSFW platforms — ABSOLUTE BLOCK
+  'onlyfans.com', 'pornhub.com', 'xvideos.com', 'xhamster.com',
+  'redtube.com', 'youporn.com', 'brazzers.com', 'playboy.com',
+  'hustler.com', 'penthouse.com', 'spankbang.com', 'xnxx.com',
+  'erome.com', 'fapello.com', 'scrolller.com',
 ];
 
 /**
@@ -85,6 +90,13 @@ const BLOCKED_TITLE_KEYWORDS = [
   // Explicit non-fashion
   'tattoo design', 'tattoo idea', 'coloring page', 'drawing tutorial',
   'how to draw', 'step by step',
+  // NSFW / Adult content — ABSOLUTE BLOCK
+  'nsfw', '18+', 'adult', 'sexy', 'nude', 'naked',
+  'porn', 'pornography', 'erotic', 'erotica',
+  'underwear', 'lingerie', 'bikini top', 'topless',
+  'cleavage', 'nipple', 'xxx', 'playboy', 'boudoir',
+  'fetish', 'sensual', 'lewd', 'explicit', 'suggestive',
+  'uncensored', 'onlyfans', 'camgirl', 'escort',
 ];
 
 /**

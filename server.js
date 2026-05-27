@@ -907,7 +907,7 @@ async function filterHatsWithLLM(items, userApiKey) {
       'gift card', 'coupon', 'discount', 'sale', 'price', 'buy now', 'shop online', 'store',
       'pinterest', 'follow me on', 'pinterest logo', 'pinterest icon'
     ];
-    const filtered = items.slice(0, 12).filter(item => {
+    const filtered = items.slice(0, 8).filter(item => {
       const lowercaseTitle = (item.title || '').toLowerCase();
       const lowercaseUrl = (item.image || '').toLowerCase();
       const isTrash = trashKeywords.some(kw => lowercaseTitle.includes(kw) || lowercaseUrl.includes(kw));
@@ -917,7 +917,7 @@ async function filterHatsWithLLM(items, userApiKey) {
   }
 
   try {
-    const topItems = items.slice(0, 12);
+    const topItems = items.slice(0, 8);
     console.log(`[LLM Filter] Attempting to download top ${topItems.length} images for Gemini 1.5 Flash Vision...`);
     
     const downloadPromises = topItems.map(async (item, i) => {
@@ -925,11 +925,16 @@ async function filterHatsWithLLM(items, userApiKey) {
       try {
         const response = await axios.get(item.image, {
           responseType: 'arraybuffer',
-          timeout: 2000
+          timeout: 1500
         });
         const contentType = response.headers['content-type'] || 'image/jpeg';
         if (contentType.startsWith('image/')) {
-          const base64 = Buffer.from(response.data).toString('base64');
+          const buffer = response.data;
+          if (buffer.byteLength > 800000) {
+            console.warn(`[LLM Filter] Skipping oversized image at index ${i} (${(buffer.byteLength / 1024).toFixed(0)}KB > 800KB): ${item.image}`);
+            return null;
+          }
+          const base64 = Buffer.from(buffer).toString('base64');
           return {
             index: i,
             mimeType: contentType,
@@ -950,7 +955,9 @@ async function filterHatsWithLLM(items, userApiKey) {
       return { success: true, items: [] };
     }
 
-    const textPrompt = `You are a STRICT fashion image curator AI for a hat/cap discovery platform.
+    const textPrompt = `ABSOLUTE SAFETY RULE: REJECT ANY image that shows nudity, semi-nudity, sexually suggestive poses, revealing clothing (underwear, lingerie, bikini tops, revealing swimwear), exposed intimate body parts, adult content, or NSFW themes. This rule takes ABSOLUTE PRIORITY over all other rules. When in doubt about content safety, ALWAYS REJECT.
+
+You are a STRICT fashion image curator AI for a hat/cap discovery platform.
 We have provided several images from the web, each labeled with "Image index <number>".
 
 For each image, determine if it represents a REAL, WEARABLE hat, cap, beanie, bucket hat, snapback, beret, fedora, or similar headwear.
@@ -989,15 +996,27 @@ Example response: [0, 2, 5]`;
           {
             parts: parts
           }
+        ],
+        safetySettings: [
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_LOW_AND_ABOVE' },
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_LOW_AND_ABOVE' }
         ]
       },
       {
         headers: { 'Content-Type': 'application/json' },
-        timeout: 15000
+        timeout: 30000
       }
     );
 
     const contentText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const finishReason = response.data?.candidates?.[0]?.finishReason;
+
+    // Safety block: Gemini's own content safety triggered — reject entire batch
+    if (finishReason === 'SAFETY') {
+      console.warn('[LLM Filter] Gemini flagged batch for SAFETY violation. Rejecting all items in batch.');
+      return { success: true, items: [] };
+    }
+
     if (!contentText) {
       throw new Error('Empty response from Gemini API');
     }
