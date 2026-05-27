@@ -8,60 +8,147 @@ const HEADERS = {
 
 /**
  * Domains to blacklist — images sourced from these will be discarded before LLM filtering.
- * Covers anime/fanart platforms, social feeds, icon/vector sites, and unrelated content hubs.
+ * Covers anime/fanart, social feeds, icon/vector, stock photo, meme, and unrelated content sites.
  */
 const BLOCKED_DOMAINS = [
-  // Anime / fanart / illustration platforms
+  // Anime / fanart / illustration / manga platforms
   'pixiv.net', 'i.pximg.net', 'pximg.net',
   'deviantart.com', 'wikiart.org', 'artstation.com',
   'zerochan.net', 'danbooru.donmai.us', 'gelbooru.com',
-  'konachan.com', 'yande.re', 'safebooru.org',
+  'konachan.com', 'yande.re', 'safebooru.org', 'rule34.xxx',
   'mangadex.org', 'myanimelist.net', 'anilist.co',
-  // Icon / vector / clipart
+  'sankakucomplex.com', 'e-hentai.org', 'nhentai.net',
+  'anime-pictures.net', 'wall.alphacoders.com', 'wallhaven.cc',
+  'minitokyo.net', 'animegalleries.net', 'crunchyroll.com',
+  'tbib.org', 'chan.sankakucomplex.com',
+  // Icon / vector / clipart / stock
   'flaticon.com', 'iconfinder.com', 'icons8.com',
   'svgrepo.com', 'iconscout.com', 'vecteezy.com',
   'freepik.com', 'shutterstock.com', 'dreamstime.com',
   'vectorstock.com', 'clipartmax.com', 'openclipart.org',
-  // Social / non-shopping
+  'istockphoto.com', 'gettyimages.com', '123rf.com',
+  'depositphotos.com', 'canstockphoto.com', 'bigstockphoto.com',
+  'pngtree.com', 'pngkey.com', 'pngwing.com', 'cleanpng.com',
+  'kindpng.com', 'imgbin.com', 'stickpng.com', 'pngitem.com',
+  'pikpng.com', 'pngfind.com', 'nicepng.com', 'dlpng.com',
+  'hiclipart.com', 'clipground.com', 'clipartof.com',
+  // Social media / non-shopping
   'twitter.com', 'x.com', 'facebook.com', 'instagram.com',
-  'tiktok.com', 'reddit.com', 'tumblr.com',
-  // Other non-relevant
+  'tiktok.com', 'reddit.com', 'tumblr.com', 'threads.net',
+  'mastodon.social', 'bsky.app', 'linkedin.com',
+  'youtube.com', 'youtu.be', 'twitch.tv', 'discord.com',
+  // Meme / humor / unrelated
+  'imgflip.com', 'knowyourmeme.com', 'memedroid.com',
+  'ifunny.co', '9gag.com', 'cheezburger.com',
+  // Wiki / reference / non-fashion
   'wikimedia.org', 'wikipedia.org', 'w.wiki',
+  'wikihow.com', 'quora.com', 'answers.com',
+  // Gaming / entertainment
+  'steampowered.com', 'store.steampowered.com', 'steamcdn-a.akamaihd.net',
+  'epicgames.com', 'roblox.com', 'minecraft.net',
+  // App stores / software
+  'play.google.com', 'apps.apple.com', 'microsoft.com',
+  'softonic.com', 'cnet.com',
 ];
 
 /**
  * Title keywords that almost always indicate garbage/non-fashion content.
+ * Case-insensitive matching applied in preFilterItems.
  */
 const BLOCKED_TITLE_KEYWORDS = [
-  'anime', 'manga', 'cosplay', 'fanart', 'fan art', 'illustration',
-  'character', 'chibi', 'waifu', 'pfp', 'avatar', 'wallpaper',
-  'clipart', 'vector', 'svg', 'icon set', 'logo pack',
-  'download free', 'free png', 'transparent png',
+  // Anime / manga / cartoon
+  'anime', 'manga', 'cosplay', 'fanart', 'fan art', 'hentai',
+  'chibi', 'waifu', 'otaku', 'kawaii', 'naruto', 'one piece',
+  'dragon ball', 'pokemon', 'sailor moon', 'attack on titan',
+  'jojo', 'demon slayer', 'genshin', 'vtuber', 'gacha',
+  'webtoon', 'manhwa', 'manhua', 'light novel',
+  // Illustration / digital art
+  'illustration', 'digital art', 'concept art', 'fantasy art',
+  'character design', 'character sheet', 'oc drawing',
+  'commission open', 'art print', 'speedpaint',
+  // Clipart / vector / icon
+  'clipart', 'clip art', 'vector', 'svg icon', 'icon set', 'logo pack',
+  'icon pack', 'emoji', 'sticker pack', 'flat icon',
+  // Download / freebie spam
+  'download free', 'free download', 'free png', 'transparent png',
+  'png image', 'png clipart', 'stock photo', 'royalty free',
+  'free vector', 'free image',
+  // Social / profile / avatar
+  'pfp', 'avatar', 'profile picture', 'profile pic', 'discord pfp',
+  // Wallpaper / screensaver
+  'wallpaper', 'desktop wallpaper', 'phone wallpaper', '4k wallpaper',
+  'background image', 'screensaver',
+  // Meme / humor
+  'meme', 'funny', 'lol', 'lmao', 'cursed image', 'shitpost',
+  // Gaming
+  'gameplay', 'game screenshot', 'fortnite', 'roblox', 'minecraft',
+  // Explicit non-fashion
+  'tattoo design', 'tattoo idea', 'coloring page', 'drawing tutorial',
+  'how to draw', 'step by step',
 ];
 
 /**
- * Quick pre-filter: remove items from blacklisted domains or with garbage title keywords.
- * This runs BEFORE the LLM to cut costs and improve accuracy.
+ * URL path patterns that indicate garbage images (regardless of domain).
+ */
+const BLOCKED_URL_PATTERNS = [
+  /\/avatar[s]?\//i,
+  /\/emoji[s]?\//i,
+  /\/sticker[s]?\//i,
+  /\/icon[s]?\//i,
+  /\/badge[s]?\//i,
+  /\/banner[s]?\//i,
+  /\/logo[s]?\//i,
+  /\/meme[s]?\//i,
+  /\/gif[s]?\//i,
+  /\.gif$/i,
+  /\.svg$/i,
+  /\/thumbnail[s]?\//i,
+  /\/placeholder[s]?\//i,
+  /\/profile[_-]?(pic|img|photo|image)/i,
+  /\/default[_-]?(avatar|user|img)/i,
+  /pixel[_.]?(art|sprite)/i,
+];
+
+/**
+ * Quick pre-filter: remove items from blacklisted domains, garbage title keywords,
+ * and suspicious URL patterns. This runs BEFORE the LLM to cut costs and improve accuracy.
  */
 export function preFilterItems(items) {
-  return items.filter(item => {
+  const before = items.length;
+  const filtered = items.filter(item => {
     const imageUrl = (item.image || item.url || '').toLowerCase();
     const sourceUrl = (item.url || '').toLowerCase();
     const title = (item.title || '').toLowerCase();
 
-    // Block by domain
+    // 1. Block by domain
     const isBlockedDomain = BLOCKED_DOMAINS.some(domain =>
       imageUrl.includes(domain) || sourceUrl.includes(domain)
     );
     if (isBlockedDomain) return false;
 
-    // Block by title keyword
+    // 2. Block by title keyword
     const isBlockedTitle = BLOCKED_TITLE_KEYWORDS.some(kw => title.includes(kw));
     if (isBlockedTitle) return false;
 
+    // 3. Block by URL path pattern
+    const isBlockedUrl = BLOCKED_URL_PATTERNS.some(pattern =>
+      pattern.test(imageUrl) || pattern.test(sourceUrl)
+    );
+    if (isBlockedUrl) return false;
+
+    // 4. Block images that are too small (likely icons/thumbnails) based on URL hints
+    const tinyImagePattern = /[_\-x](16|24|32|48|50|64|72|75|80|96|100|120|128)[\._\-x]/i;
+    if (tinyImagePattern.test(imageUrl)) return false;
+
     return true;
   });
+
+  if (before !== filtered.length) {
+    console.log(`[Pre-Filter] Blocked ${before - filtered.length}/${before} garbage items (domains/keywords/URL patterns)`);
+  }
+  return filtered;
 }
+
 
 /**
  * Fetch image search JSON internally from DuckDuckGo using search token VQD, returning array of hats.
