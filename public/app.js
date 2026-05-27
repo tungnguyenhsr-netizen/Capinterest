@@ -464,6 +464,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Changelog Localization (Vietnamese)
       changelog_title: "Nhật Ký Cập Nhật (Changelog)",
       changelog_subtitle: "Lịch sử phát triển và nâng cấp hệ thống CapInterest phong cách Cyberpunk",
+      changelog_date_v182: "27 Tháng 5, 2026",
+      changelog_title_v182: "🧠 Bộ Lọc Học Máy Thích Ứng & Báo Cáo Rác Cộng Đồng (Adaptive ML Filter)",
+      changelog_li1_v182: "<span class=\"highlight-purple\">Adaptive ML Filter:</span> Bộ lọc ML thích ứng tự động học hỏi từ các báo cáo hình ảnh của người dùng, nâng cao khả năng nhận diện ảnh rác theo thời gian.",
+      changelog_li2_v182: "<span class=\"highlight-cyan\">Tự Động Tái Huấn Luyện (Auto-Retraining):</span> Hệ thống kích hoạt quy trình tự động huấn luyện lại mô hình Gemini 1.5 Flash sau mỗi 10 lượt báo cáo nón rác/không hợp lệ từ cộng đồng.",
       changelog_date_v180: "27 Tháng 5, 2026",
       changelog_title_v180: "🚀 Gemini Vision + Bộ Đệm Prefetch Vô Hạn + Báo Cáo Rác Tự Làm Sạch Cache",
       changelog_li1_v180: "<span class=\"highlight-purple\">Gemini Vision Curatorial Filter:</span> Xác thực hình ảnh đa phương thức phía máy chủ sử dụng gemini-1.5-flash kết hợp tải xuống song song để lọc ảnh rác thông minh.",
@@ -743,6 +747,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Changelog Localization (English)
       changelog_title: "Update History (Changelog)",
       changelog_subtitle: "Development history and system upgrades of CapInterest in Cyberpunk style",
+      changelog_date_v182: "May 27, 2026",
+      changelog_title_v182: "🧠 Adaptive ML Filter & Crowd-Sourced Flagging (v1.8.2)",
+      changelog_li1_v182: "<span class=\"highlight-purple\">Adaptive ML Filter:</span> Adaptive ML curatorial filter automatically learns from user image reports to improve trash/spam detection over time.",
+      changelog_li2_v182: "<span class=\"highlight-cyan\">Auto-Retraining:</span> Triggers server-side model retraining using Gemini 1.5 Flash automatically for every 10 reported hats/irrelevant images.",
       changelog_date_v180: "May 27, 2026",
       changelog_title_v180: "🚀 Gemini Vision + Infinite Prefetch Buffer + Crowd-sourced Flagging (v1.8.0)",
       changelog_li1_v180: "<span class=\"highlight-purple\">Gemini Vision Curatorial Filter:</span> Server-side multimodal image verification using gemini-1.5-flash with parallel downloads for smart filtering.",

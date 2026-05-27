@@ -358,6 +358,144 @@ function getReportedImages() {
   }
 }
 
+const LEARNED_FILTERS_FILE = path.join(DATA_DIR, 'learned_filters.json');
+
+function getLearnedFilters() {
+  const defaultFilters = {
+    learnedDomains: [],
+    learnedKeywords: [],
+    learnedUrlPatterns: [],
+    lastTrainedAt: null,
+    trainedOnReportCount: 0
+  };
+  if (!fs.existsSync(LEARNED_FILTERS_FILE)) {
+    try {
+      fs.writeFileSync(LEARNED_FILTERS_FILE, JSON.stringify(defaultFilters, null, 2));
+    } catch (err) {
+      console.error('[Filters] Failed to create learned_filters.json:', err.message);
+    }
+    return defaultFilters;
+  }
+  try {
+    return JSON.parse(fs.readFileSync(LEARNED_FILTERS_FILE, 'utf8'));
+  } catch (err) {
+    console.error('[Filters] Failed to parse learned_filters.json:', err.message);
+    return defaultFilters;
+  }
+}
+
+function saveLearnedFilters(filters) {
+  try {
+    fs.writeFileSync(LEARNED_FILTERS_FILE, JSON.stringify(filters, null, 2));
+  } catch (err) {
+    console.error('[Filters] Failed to write learned_filters.json:', err.message);
+  }
+}
+
+async function runRetraining(apiKey) {
+  const actualApiKey = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+  if (!actualApiKey) {
+    throw new Error('No API key available for retraining');
+  }
+  
+  const reports = getReportedImages();
+  if (reports.length === 0) {
+    console.log('[Retraining] No reports to train on.');
+    return;
+  }
+  
+  const simplifiedReports = reports.map(r => ({
+    title: r.title,
+    image: r.image,
+    query: r.query
+  }));
+  
+  const promptText = `You are analyzing a list of reported garbage images in our Cap/Hat search feed. We want to extract common domain names, title keywords, and URL path patterns that characterize garbage/unrelated items (e.g. logos, profile icons, shoes, pants, non-apparel, anime, ads) so we can block them in future scrapes.
+  Analyze these reports: ${JSON.stringify(simplifiedReports)}
+  Return a JSON object containing:
+  - domains: array of domains to block (e.g., "deviantart.com", "pixiv.net", "facebook.com", without http/www prefix)
+  - keywords: array of lowercase keywords/phrases to block in image titles (e.g. "shirt", "pant", "shoe", "logo", "icon")
+  - urlPatterns: array of simple strings/regex-like substrings representing URL path patterns to block (e.g., "/logo-", "/avatar/")
+  Do not output markdown format besides raw JSON, or wrap it in a code block if needed, but ensure it parses correctly.`;
+
+  console.log(`[Retraining] Sending request to Gemini 1.5 Flash...`);
+  
+  if (actualApiKey === 'MOCK_TEST_KEY_12345') {
+    console.log('[Retraining] Mock API Key detected. Simulating training.');
+    const learnedFilters = getLearnedFilters();
+    const newDomains = ['mock-garbage-domain.com'];
+    const newKeywords = ['mockgarbage'];
+    const newPatterns = ['/mock-bad/'];
+    
+    learnedFilters.learnedDomains = Array.from(new Set([...learnedFilters.learnedDomains, ...newDomains]));
+    learnedFilters.learnedKeywords = Array.from(new Set([...learnedFilters.learnedKeywords, ...newKeywords]));
+    learnedFilters.learnedUrlPatterns = Array.from(new Set([...learnedFilters.learnedUrlPatterns, ...newPatterns]));
+    learnedFilters.lastTrainedAt = new Date().toISOString();
+    learnedFilters.trainedOnReportCount = reports.length;
+    saveLearnedFilters(learnedFilters);
+    return;
+  }
+
+  const response = await axios.post(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${actualApiKey}`,
+    {
+      contents: [
+        {
+          parts: [
+            { text: promptText }
+          ]
+        }
+      ]
+    },
+    {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 30000
+    }
+  );
+
+  const contentText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!contentText) {
+    throw new Error('Empty response from Gemini API during retraining');
+  }
+
+  let jsonString = contentText.trim();
+  if (jsonString.startsWith('```')) {
+    jsonString = jsonString.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+  }
+
+  const result = JSON.parse(jsonString);
+  if (!result || typeof result !== 'object') {
+    throw new Error('Gemini response is not a valid JSON object');
+  }
+
+  const newDomains = Array.isArray(result.domains) ? result.domains : [];
+  const newKeywords = Array.isArray(result.keywords) ? result.keywords : [];
+  const newPatterns = Array.isArray(result.urlPatterns) ? result.urlPatterns : [];
+
+  const learnedFilters = getLearnedFilters();
+  
+  learnedFilters.learnedDomains = Array.from(new Set([
+    ...learnedFilters.learnedDomains,
+    ...newDomains.map(d => d.trim().toLowerCase())
+  ])).filter(Boolean);
+  
+  learnedFilters.learnedKeywords = Array.from(new Set([
+    ...learnedFilters.learnedKeywords,
+    ...newKeywords.map(k => k.trim().toLowerCase())
+  ])).filter(Boolean);
+  
+  learnedFilters.learnedUrlPatterns = Array.from(new Set([
+    ...learnedFilters.learnedUrlPatterns,
+    ...newPatterns.map(p => p.trim())
+  ])).filter(Boolean);
+
+  learnedFilters.lastTrainedAt = new Date().toISOString();
+  learnedFilters.trainedOnReportCount = reports.length;
+
+  saveLearnedFilters(learnedFilters);
+  console.log(`[Retraining] Successfully completed retraining. Trained on ${reports.length} reports.`);
+}
+
 function saveHatsToCache(hats, query = '') {
   const cached = getCachedHats();
   const seenUrls = new Set(cached.map(item => item.image));
@@ -563,9 +701,10 @@ app.get('/api/scrape', async (req, res) => {
   // 5a. Pre-filter: block blacklisted domains & garbage title keywords (fast, no LLM cost)
   const reportedImages = getReportedImages();
   const reportedUrlsSet = new Set(reportedImages.map(item => (item.image || '').toLowerCase()));
+  const learnedFilters = getLearnedFilters();
 
   const beforePreFilter = scrapedItems.length;
-  scrapedItems = preFilterItems(scrapedItems, reportedUrlsSet);
+  scrapedItems = preFilterItems(scrapedItems, reportedUrlsSet, learnedFilters);
   console.log(`[Pre-Filter] Removed ${beforePreFilter - scrapedItems.length} items via domain/keyword/reported blacklist. Remaining: ${scrapedItems.length}`);
 
   // 5b. Apply Google Gemini LLM garbage filter if items were successfully scraped
@@ -689,6 +828,19 @@ app.post('/api/hats/report', (req, res) => {
     fs.writeFileSync(SCRAPED_HATS_FILE, JSON.stringify(updatedCache, null, 2));
 
     console.log(`[Report API] Image reported and removed from cache: ${image}`);
+
+    // Trigger retraining if threshold of 10 new reports is reached
+    const totalReportsCount = reports.length;
+    const learnedFilters = getLearnedFilters();
+    const trainedOnReportCount = learnedFilters.trainedOnReportCount || 0;
+    if (totalReportsCount - trainedOnReportCount >= 10) {
+      const apiKey = getGeminiApiKey(req);
+      console.log(`[Report API] Retraining threshold reached (${totalReportsCount} reports vs trained on ${trainedOnReportCount}). Starting background training...`);
+      runRetraining(apiKey).catch(err => {
+        console.error('[Report API] Background retraining failed:', err.message);
+      });
+    }
+
     return res.json({ success: true, message: 'Image reported and removed from cache.' });
   } catch (err) {
     console.error('[Report API] Error reporting image:', err.message);
@@ -1497,7 +1649,76 @@ At the very end of your response, write a clean XML/SVG code block representing 
   }
 });
 
+// GET /api/admin/reports/stats — Lấy thông tin thống kê báo cáo và bộ lọc đã học
+app.get('/api/admin/reports/stats', (req, res) => {
+  try {
+    const reports = getReportedImages();
+    const domainCounts = {};
+    const keywordCounts = {};
+    
+    reports.forEach(r => {
+      if (r.image) {
+        try {
+          const u = new URL(r.image);
+          const domain = u.hostname.replace('www.', '');
+          domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+        } catch (e) {
+          // ignore invalid URLs
+        }
+      }
+      
+      if (r.title) {
+        const words = r.title.toLowerCase()
+          .replace(/[^\w\s]/g, '')
+          .split(/\s+/)
+          .filter(w => w.length > 2);
+        words.forEach(w => {
+          keywordCounts[w] = (keywordCounts[w] || 0) + 1;
+        });
+      }
+    });
 
+    const learnedFilters = getLearnedFilters();
+    const lastTrainTime = learnedFilters.lastTrainedAt;
+    const trainedOnReportCount = learnedFilters.trainedOnReportCount || 0;
+    const sinceLastTrain = reports.length - trainedOnReportCount;
+
+    return res.json({
+      success: true,
+      totalReports: reports.length,
+      sinceLastTrain: sinceLastTrain >= 0 ? sinceLastTrain : reports.length,
+      topDomains: domainCounts,
+      topKeywords: keywordCounts,
+      lastTrainTime: lastTrainTime,
+      currentFilters: learnedFilters
+    });
+  } catch (err) {
+    console.error('[Admin Stats API] Error:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/admin/retrain — Chạy huấn luyện bộ lọc thích ứng thủ công
+app.post('/api/admin/retrain', async (req, res) => {
+  const adminSecret = req.headers['x-admin-secret'];
+  if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+    return res.status(401).json({ success: false, error: 'Unauthorized: Invalid admin secret' });
+  }
+
+  try {
+    const apiKey = getGeminiApiKey(req);
+    await runRetraining(apiKey);
+    const currentFilters = getLearnedFilters();
+    return res.json({
+      success: true,
+      message: 'Retrained successfully',
+      learnedFilters: currentFilters
+    });
+  } catch (err) {
+    console.error('[Admin Retrain API] Error:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // ─── Admin Database Backup & Restore Routes ─────────────────────────────────
 

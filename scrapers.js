@@ -125,7 +125,7 @@ const BLOCKED_URL_PATTERNS = [
  * Quick pre-filter: remove items from blacklisted domains, garbage title keywords,
  * and suspicious URL patterns. This runs BEFORE the LLM to cut costs and improve accuracy.
  */
-export function preFilterItems(items, reportedUrls = new Set()) {
+export function preFilterItems(items, reportedUrls = new Set(), learnedFilters = null) {
   const before = items.length;
   const filtered = items.filter(item => {
     const imageUrl = (item.image || item.url || '').toLowerCase();
@@ -140,17 +140,26 @@ export function preFilterItems(items, reportedUrls = new Set()) {
     // 1. Block by domain
     const isBlockedDomain = BLOCKED_DOMAINS.some(domain =>
       imageUrl.includes(domain) || sourceUrl.includes(domain)
-    );
+    ) || (learnedFilters && learnedFilters.learnedDomains && learnedFilters.learnedDomains.some(domain => {
+      const lowerD = domain.toLowerCase();
+      return imageUrl.includes(lowerD) || sourceUrl.includes(lowerD);
+    }));
     if (isBlockedDomain) return false;
 
     // 2. Block by title keyword
-    const isBlockedTitle = BLOCKED_TITLE_KEYWORDS.some(kw => title.includes(kw));
+    const isBlockedTitle = BLOCKED_TITLE_KEYWORDS.some(kw => title.includes(kw)) ||
+      (learnedFilters && learnedFilters.learnedKeywords && learnedFilters.learnedKeywords.some(kw => {
+        return title.includes(kw.toLowerCase());
+      }));
     if (isBlockedTitle) return false;
 
     // 3. Block by URL path pattern
     const isBlockedUrl = BLOCKED_URL_PATTERNS.some(pattern =>
       pattern.test(imageUrl) || pattern.test(sourceUrl)
-    );
+    ) || (learnedFilters && learnedFilters.learnedUrlPatterns && learnedFilters.learnedUrlPatterns.some(pattern => {
+      const lowerP = pattern.toLowerCase();
+      return imageUrl.includes(lowerP) || sourceUrl.includes(lowerP);
+    }));
     if (isBlockedUrl) return false;
 
     // 4. Block images that are too small (likely icons/thumbnails) based on URL hints
