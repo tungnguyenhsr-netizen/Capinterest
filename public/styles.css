@@ -2948,6 +2948,28 @@ body {
     gap: 20px;
     padding: 16px;
   }
+
+  .moodboard-main {
+    height: 500px;
+  }
+
+  .moodboard-toolbar {
+    padding: 6px 8px;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  .toolbar-group {
+    padding: 2px 4px;
+    gap: 2px;
+    flex-wrap: wrap;
+  }
+
+  .mb-tool-btn {
+    padding: 5px 8px;
+    font-size: 0.75rem;
+    gap: 3px;
+  }
 }
 
 .card-entrance {
